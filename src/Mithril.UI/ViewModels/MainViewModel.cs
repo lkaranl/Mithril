@@ -336,8 +336,8 @@ public partial class MainViewModel : ViewModelBase
         {
             StatusMessage = "Gerando backup físico criptografado...";
             string backupPath = await _backupService.CreateBackupAsync(_defaultVaultPath, _defaultBackupDirectory);
-            string msg = $"Backup gerado e assinado com sucesso: {Path.GetFileName(backupPath)}";
-            StatusMessage = msg;
+            string msg = $"Backup gerado e assinado com sucesso em:\n{backupPath}";
+            StatusMessage = $"Backup gerado com sucesso em: {backupPath}";
             ShowNotification(msg, "Success");
         }
         catch (Exception ex)
