@@ -28,7 +28,7 @@ public class McpServerService
         _cts = new CancellationTokenSource();
         // Iniciamos a escuta do stdin em uma Task dedicada que roda em background
         _listenTask = Task.Run(() => ListenToStdInAsync(_cts.Token));
-        LogToErrorStream("Servidor MCP local inicializado e aguardando mensagens via stdio...");
+        LogToErrorStream("INFO: Servidor MCP local inicializado e aguardando mensagens via stdio. (Nota: a exibição vermelha no console se deve ao uso de stderr, padrão do protocolo para não interferir no fluxo JSON-RPC).");
     }
 
     public void Stop()
@@ -40,7 +40,7 @@ public class McpServerService
         }
         catch (OperationCanceledException) { }
         _listenTask = null;
-        LogToErrorStream("Servidor MCP parado.");
+        LogToErrorStream("INFO: Servidor MCP local finalizado com sucesso.");
     }
 
     private async Task ListenToStdInAsync(CancellationToken cancellationToken)
