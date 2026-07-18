@@ -356,7 +356,21 @@ public partial class MainViewModel : ViewModelBase
                 {
                     cred.Category = "Geral";
                 }
-                Credentials.Add(cred);
+                
+                // Clona para forçar atualização visual completa dos containers do Avalonia
+                var displayCred = new Credential
+                {
+                    Id = cred.Id,
+                    Type = cred.Type,
+                    Domain = cred.Domain,
+                    Username = cred.Username,
+                    EncryptedPassword = cred.EncryptedPassword,
+                    TokenUrl = cred.TokenUrl,
+                    Category = cred.Category,
+                    CreatedAt = cred.CreatedAt,
+                    LastModifiedAt = cred.LastModifiedAt
+                };
+                Credentials.Add(displayCred);
             }
         }
         ApplyFilters();
