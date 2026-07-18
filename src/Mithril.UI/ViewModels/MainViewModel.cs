@@ -367,6 +367,40 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void OpenBackupFolder()
+    {
+        try
+        {
+            if (!Directory.Exists(_defaultBackupDirectory))
+            {
+                Directory.CreateDirectory(_defaultBackupDirectory);
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                System.Diagnostics.Process.Start("explorer.exe", _defaultBackupDirectory);
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                System.Diagnostics.Process.Start("open", _defaultBackupDirectory);
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                System.Diagnostics.Process.Start("xdg-open", _defaultBackupDirectory);
+            }
+            else
+            {
+                StatusMessage = "Sistema operacional não suportado para abrir a pasta.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Falha ao abrir pasta de backup: {ex.Message}";
+        }
+    }
+
+
+    [RelayCommand]
     private async Task RestoreBackupAsync()
     {
         if (!IsVaultOpen)

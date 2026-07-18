@@ -15,12 +15,22 @@
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
-        <!-- Força o TextBox a manter cores escuras e de alto contraste sob foco e hover no Windows -->
+        <!-- Definições de cores globais de TextBox/Controls para manter alto contraste e visibilidade no Windows -->
+        <SolidColorBrush x:Key="TextControlBackground" Color="#2C2C2E"/>
+        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#3A3A3C"/>
         <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#2C2C2E"/>
-        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#2C2C2E"/>
+        
+        <SolidColorBrush x:Key="TextControlForeground" Color="#F5F5F7"/>
+        <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#F5F5F7"/>
         <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#F5F5F7"/>
+        
+        <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#98989F"/>
+        <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#B0B0B5"/>
+        <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#98989F"/>
+        
+        <SolidColorBrush x:Key="TextControlBorderBrush" Color="#3A3A3C"/>
+        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#4A4A4C"/>
         <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#0A84FF"/>
-        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#0070E0"/>
     </Window.Resources>
 
     <Window.Styles>
@@ -394,6 +404,10 @@
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                         <Button Classes="sidebar-action" Content="⬆ Restaurar Backup"
                                 Command="{Binding RestoreBackupCommand}"
+                                IsVisible="{Binding !IsAddFormOpen}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                        <Button Classes="sidebar-action" Content="📂 Abrir Pasta Backups"
+                                Command="{Binding OpenBackupFolderCommand}"
                                 IsVisible="{Binding !IsAddFormOpen}"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                     </StackPanel>
