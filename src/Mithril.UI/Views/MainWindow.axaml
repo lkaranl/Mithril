@@ -49,16 +49,19 @@
             <Setter Property="BorderBrush" Value="#4A4A6A"/>
         </Style>
 
-        <!-- Estilo de botão ícone (transparente, com alto contraste) -->
+        <!-- Estilo de botão ícone (com hover de alto contraste) -->
         <Style Selector="Button.icon-btn">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="6"/>
+            <Setter Property="Padding" Value="8"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.icon-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#252535"/>
+            <Setter Property="Background" Value="#25253D"/>
+        </Style>
+        <Style Selector="Button.icon-btn:pointerover TextBlock">
+            <Setter Property="Foreground" Value="#5B6EF5"/>
         </Style>
 
         <!-- TextBox estilizado -->
@@ -77,7 +80,7 @@
             <Setter Property="Background" Value="#17172A"/>
         </Style>
 
-        <!-- ComboBox estilizado com alto contraste no Windows/Linux -->
+        <!-- ComboBox estilizado com alto contraste -->
         <Style Selector="ComboBox">
             <Setter Property="Background" Value="#13131E"/>
             <Setter Property="Foreground" Value="#E0E0F0"/>
@@ -92,7 +95,7 @@
             <Setter Property="Padding" Value="10,8"/>
         </Style>
         <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#252535"/>
+            <Setter Property="Background" Value="#2E2E4A"/>
             <Setter Property="Foreground" Value="#FFFFFF"/>
         </Style>
         <Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
@@ -100,20 +103,41 @@
             <Setter Property="Foreground" Value="#FFFFFF"/>
         </Style>
 
-        <!-- ListBox sem decoração -->
-        <Style Selector="ListBox">
+        <!-- ListBox de Categorias no Topo (Tags horizontais estilo pílulas) -->
+        <Style Selector="ListBox.category-tags">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
         </Style>
-        <Style Selector="ListBoxItem">
+        <Style Selector="ListBox.category-tags ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="ListBox.category-tags ListBoxItem /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="ListBox.category-tags ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="ListBox.category-tags ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <!-- ListBox sem decoração para a lista principal -->
+        <Style Selector="ListBox.main-list">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.main-list ListBoxItem">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
         </Style>
-        <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+        <Style Selector="ListBox.main-list ListBoxItem:selected /template/ ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
-        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+        <Style Selector="ListBox.main-list ListBoxItem:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
     </Window.Styles>
@@ -317,30 +341,60 @@
                 <Grid Grid.Row="2">
 
                     <!-- LISTA DE CREDENCIAIS (Com Filtro e Busca) -->
-                    <Grid IsVisible="{Binding !IsAddFormOpen}" RowDefinitions="Auto, *">
+                    <Grid IsVisible="{Binding !IsAddFormOpen}" RowDefinitions="Auto, Auto, *">
                         
-                        <!-- Barra de Busca & Filtro de Categorias -->
-                        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" ColumnSpacing="12" Margin="0,0,0,12">
-                            <!-- Input de Busca -->
-                            <TextBox Grid.Column="0" Classes="field"
+                        <!-- Barra de Busca (Topo) -->
+                        <Grid Grid.Row="0" Margin="0,0,0,8">
+                            <TextBox Classes="field"
                                      Text="{Binding SearchText}"
                                      PlaceholderText="Buscar por domínio ou usuário..."/>
-                            
-                            <!-- Dropdown de Filtro de Categoria -->
-                            <ComboBox Grid.Column="1" 
-                                      ItemsSource="{Binding FilterCategories}"
-                                      SelectedItem="{Binding SelectedCategoryFilter}"
-                                      Width="160"/>
                         </Grid>
 
-                        <Border Grid.Row="1"
+                        <!-- Tags/Categorias Rápidas (Estilo Pills com Seleção Reativa) -->
+                        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+                            <ListBox Classes="category-tags" 
+                                     ItemsSource="{Binding FilterCategories}" 
+                                     SelectedItem="{Binding SelectedCategoryFilter}">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="16" Padding="12,6" BorderThickness="1" Cursor="Hand" Margin="1,2">
+                                            <Border.Styles>
+                                                <!-- Estilo Normal das Tags -->
+                                                <Style Selector="Border">
+                                                    <Setter Property="Background" Value="#13131E"/>
+                                                    <Setter Property="BorderBrush" Value="#32324D"/>
+                                                </Style>
+                                                <Style Selector="Border:pointerover">
+                                                    <Setter Property="Background" Value="#25253A"/>
+                                                    <Setter Property="BorderBrush" Value="#4A4A6A"/>
+                                                </Style>
+                                                <!-- Estilo quando Selecionado (Hover de Alto Contraste) -->
+                                                <Style Selector="ListBoxItem:selected Border">
+                                                    <Setter Property="Background" Value="#5B6EF5"/>
+                                                    <Setter Property="BorderBrush" Value="#5B6EF5"/>
+                                                </Style>
+                                            </Border.Styles>
+                                            <TextBlock Text="{Binding}" FontSize="11" FontWeight="SemiBold" Foreground="#F0F0FA"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </ScrollViewer>
+
+                        <!-- Listagem física das credenciais -->
+                        <Border Grid.Row="2"
                                 Background="#0F0F1A"
                                 BorderBrush="#1A1A28"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="8">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <ListBox ItemsSource="{Binding FilteredCredentials}">
+                                <ListBox Classes="main-list" ItemsSource="{Binding FilteredCredentials}">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Border Margin="4,3" CornerRadius="10"
@@ -349,9 +403,10 @@
                                                     BorderThickness="1"
                                                     Padding="14,12">
                                                 <Border.Styles>
+                                                    <!-- Hover com Excelente Contraste no Windows -->
                                                     <Style Selector="Border:pointerover">
-                                                        <Setter Property="Background" Value="#17172A"/>
-                                                        <Setter Property="BorderBrush" Value="#32324D"/>
+                                                        <Setter Property="Background" Value="#1D1D35"/>
+                                                        <Setter Property="BorderBrush" Value="#5B6EF5"/>
                                                     </Style>
                                                 </Border.Styles>
                                                 <Grid ColumnDefinitions="Auto, *, Auto">
@@ -367,21 +422,40 @@
                                                         </Panel>
                                                     </Border>
 
-                                                    <!-- Informações -->
+                                                    <!-- Informações com adaptação de nomes (Web: Domínio em destaque, API: Client ID em destaque) -->
                                                     <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                                                        <!-- Linha 1: Domínio (truncado) e Categoria -->
+                                                        
+                                                        <!-- Linha 1: Título principal do Card e Categoria -->
                                                         <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <!-- Se for Web: Exibe Domain -->
                                                             <TextBlock Text="{Binding Domain}" FontSize="14" MaxWidth="280"
                                                                        FontWeight="SemiBold" Foreground="#E0E0F0"
-                                                                       TextTrimming="CharacterEllipsis"/>
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}"/>
+                                                            <!-- Se for API: Exibe Username (Client ID) no lugar do link/Domain -->
+                                                            <TextBlock Text="{Binding Username}" FontSize="14" MaxWidth="280"
+                                                                       FontWeight="SemiBold" Foreground="#E0E0F0"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"/>
+                                                            
+                                                            <!-- Badge de Categoria -->
                                                             <Border CornerRadius="6" Padding="6,2" Background="#1E1E38">
                                                                 <TextBlock Text="{Binding Category}" FontSize="9" Foreground="#A0A0C5" FontWeight="SemiBold"/>
                                                             </Border>
                                                         </StackPanel>
-                                                        <!-- Linha 2: Usuário (truncado) e tipo -->
+
+                                                        <!-- Linha 2: Subtítulo do Card e Badges de Criptografia -->
                                                         <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <!-- Se for Web: Exibe Username -->
                                                             <TextBlock Text="{Binding Username}" FontSize="12" MaxWidth="220"
-                                                                       Foreground="#8E8EAF" TextTrimming="CharacterEllipsis"/>
+                                                                       Foreground="#8E8EAF" TextTrimming="CharacterEllipsis"
+                                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}"/>
+                                                            <!-- Se for API: Exibe Domain (Identificador textual da API) -->
+                                                            <TextBlock Text="{Binding Domain}" FontSize="12" MaxWidth="220"
+                                                                       Foreground="#8E8EAF" TextTrimming="CharacterEllipsis"
+                                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"/>
+                                                            
+                                                            <!-- Badges de Tipo e Segurança -->
                                                             <Border CornerRadius="4" Padding="5,1"
                                                                     IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"
                                                                     Background="#0E1830" BorderBrush="#1E3A6A" BorderThickness="1">
@@ -394,7 +468,7 @@
                                                         </StackPanel>
                                                     </StackPanel>
 
-                                                    <!-- Ações de Um Clique (Cores de Alto Contraste) -->
+                                                    <!-- Ações de Um Clique -->
                                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                         <!-- Copiar Usuário -->
                                                         <Button Classes="icon-btn"
