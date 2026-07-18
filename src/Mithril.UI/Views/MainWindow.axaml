@@ -119,10 +119,9 @@
 
         <!-- ToggleSwitch: Contraste corrigido para fundo escuro -->
         <!-- Off: Track cinza-violeta médio (#4A4A6A) → contraste ~3.5:1 contra fundo #0D0D12 -->
-        <!-- On:  Track azul-índigo (#5B6EF5) → coherente com a paleta primária do projeto -->
+        <!-- On:  Track azul-índigo (#5B6EF5) → coerente com a paleta primária do projeto -->
         <Style Selector="ToggleSwitch /template/ Border#SwitchKnobBounds">
             <Setter Property="Background" Value="#4A4A6A"/>
-            <Setter Property="CornerRadius" Value="10"/>
         </Style>
         <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnobBounds">
             <Setter Property="Background" Value="#5B6EF5"/>
@@ -133,12 +132,12 @@
         <Style Selector="ToggleSwitch:checked:pointerover /template/ Border#SwitchKnobBounds">
             <Setter Property="Background" Value="#4A5DE4"/>
         </Style>
-        <!-- Knob: branco-lavanda no Off, branco puro no On -->
-        <Style Selector="ToggleSwitch /template/ Ellipse#SwitchKnob">
-            <Setter Property="Fill" Value="#D0D0E8"/>
+        <!-- Knob: branco-lavanda no Off, branco puro no On (Border, não Ellipse, no Fluent theme do Avalonia) -->
+        <Style Selector="ToggleSwitch /template/ Border#SwitchKnob">
+            <Setter Property="Background" Value="#D0D0E8"/>
         </Style>
-        <Style Selector="ToggleSwitch:checked /template/ Ellipse#SwitchKnob">
-            <Setter Property="Fill" Value="#FFFFFF"/>
+        <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnob">
+            <Setter Property="Background" Value="#FFFFFF"/>
         </Style>
 
 
@@ -286,21 +285,25 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Switch do Servidor de Rede (SSE) -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="0,0,16,0"
+                <!-- Toggles de controle (Servidor de Rede + Consentimento MCP) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center"
+                            HorizontalAlignment="Right" Margin="0,0,16,0"
                             IsVisible="{Binding IsVaultOpen}">
                     <!-- Toggle: Servidor de Rede -->
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="Servidor de Rede" FontSize="11" Foreground="#8E8EAF" VerticalAlignment="Center"/>
-                        <ToggleSwitch IsChecked="{Binding IsSseServerActive}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="Rede" FontSize="10" Foreground="#6E6E90" VerticalAlignment="Center"
+                                   ToolTip.Tip="Servidor de Rede (SSE)"/>
+                        <ToggleSwitch IsChecked="{Binding IsSseServerActive}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
+                                     ToolTip.Tip="Servidor de Rede (SSE): ativa o endpoint HTTP para clientes externos"/>
                     </StackPanel>
                     <!-- Separador vertical -->
-                    <Border Width="1" Height="16" Background="#2A2A45" VerticalAlignment="Center"/>
+                    <Border Width="1" Height="14" Background="#2A2A45" VerticalAlignment="Center"/>
                     <!-- Toggle: Consentimento MCP -->
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
-                                ToolTip.Tip="Quando ativado, exibe um diálogo de confirmação a cada solicitação do MCP. Desative para aprovação silenciosa automática.">
-                        <TextBlock Text="Consentimento MCP" FontSize="11" Foreground="#8E8EAF" VerticalAlignment="Center"/>
-                        <ToggleSwitch IsChecked="{Binding IsConsentRequired}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="Consentimento" FontSize="10" Foreground="#6E6E90" VerticalAlignment="Center"
+                                   ToolTip.Tip="Consentimento MCP: quando ativo, exibe diálogo de confirmação a cada solicitação"/>
+                        <ToggleSwitch IsChecked="{Binding IsConsentRequired}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"
+                                     ToolTip.Tip="Consentimento MCP: quando ativo, exibe diálogo de confirmação a cada solicitação. Desative para aprovação silenciosa."/>
                     </StackPanel>
                 </StackPanel>
 
