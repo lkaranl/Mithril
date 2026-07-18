@@ -4,8 +4,10 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mithril.Domain.Exceptions;
@@ -342,6 +344,71 @@ public partial class MainViewModel : ViewModelBase
         {
             StatusMessage = $"Falha no backup: {ex.Message}";
             ShowNotification($"Erro físico ao gerar backup: {ex.Message}", "Error");
+        }
+    }
+
+    [RelayCommand]
+    private async Task RestoreBackupAsync()
+    {
+        if (!IsVaultOpen)
+        {
+            ShowNotification("Abra o cofre primeiro antes de restaurar um backup.", "Info");
+            return;
+        }
+
+        try
+        {
+            var desktop = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+            if (desktop?.MainWindow == null) return;
+
+            var storageProvider = TopLevel.GetTopLevel(desktop.MainWindow)?.StorageProvider;
+            if (storageProvider == null) return;
+
+            var options = new FilePickerOpenOptions
+            {
+                Title = "Selecionar Arquivo de Backup do Mithril",
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("Backups do Mithril") { Patterns = new[] { "*.json", "*_backup*" } }
+                }
+            };
+
+            var files = await storageProvider.OpenFilePickerAsync(options);
+            if (files == null || files.Count == 0) return;
+
+            string backupFilePath = files[0].Path.LocalPath;
+
+            StatusMessage = "Restaurando backup e verificando integridade...";
+            bool restored = await _backupService.RestoreBackupAsync(backupFilePath, _defaultVaultPath);
+
+            if (restored)
+            {
+                try
+                {
+                    var reloadedVault = await _vaultRepository.LoadVaultAsync(_defaultVaultPath, _currentVaultKey!);
+                    _currentVault = reloadedVault;
+                    LoadCredentialsList();
+                    StatusMessage = "Backup restaurado e cofre recarregado com sucesso!";
+                    ShowNotification("Backup restaurado e cofre recarregado com sucesso!", "Success");
+                }
+                catch (SecurityException)
+                {
+                    _currentVault = null;
+                    _currentVaultKey = null;
+                    IsVaultOpen = false;
+                    MasterPassword = string.Empty;
+                    Credentials.Clear();
+                    FilteredCredentials.Clear();
+                    StatusMessage = "🔒 Backup restaurado com sucesso! Insira a Senha Mestre do backup para desbloquear.";
+                    ShowNotification("Backup restaurado. Insira a Senha Mestre do backup para desbloquear o cofre.", "Info");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Falha ao restaurar backup: {ex.Message}";
+            ShowNotification($"Erro ao restaurar backup: {ex.Message}", "Error");
         }
     }
 

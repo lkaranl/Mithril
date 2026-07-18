@@ -10,6 +10,11 @@ public partial class DeleteConfirmWindow : Window
         InitializeComponent();
     }
 
+    private void InitializeComponent()
+    {
+        Avalonia.Markup.Xaml.AvaloniaXamlLoader.Load(this);
+    }
+
     public DeleteConfirmWindow(string identifier) : this()
     {
         var textBlock = this.FindControl<TextBlock>("TxtIdentifier");

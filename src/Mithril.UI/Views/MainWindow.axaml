@@ -300,6 +300,10 @@
                                 Command="{Binding CreateBackupCommand}"
                                 IsVisible="{Binding !IsAddFormOpen}"
                                 Padding="12,8"/>
+                        <Button Classes="secondary" Content="⬆ Restore"
+                                Command="{Binding RestoreBackupCommand}"
+                                IsVisible="{Binding !IsAddFormOpen}"
+                                Padding="12,8"/>
                         <Button Classes="primary" Content="+ Nova Credencial"
                                 Command="{Binding ToggleAddFormCommand}"
                                 IsVisible="{Binding !IsAddFormOpen}"
