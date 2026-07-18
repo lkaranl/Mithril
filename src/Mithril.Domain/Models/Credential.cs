@@ -16,6 +16,7 @@ public class Credential
     public string Username { get; set; } = string.Empty; // Serve como usuário web ou Client ID da API
     public string EncryptedPassword { get; set; } = string.Empty; // Serve como senha web ou Client Secret criptografado
     public string TokenUrl { get; set; } = string.Empty; // Específico para tipo ApiToken
+    public string Category { get; set; } = "Geral"; // Categoria da credencial (ex: "Trabalho", "Pessoal")
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime LastModifiedAt { get; set; } = DateTime.UtcNow;
 }

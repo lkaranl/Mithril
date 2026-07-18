@@ -148,26 +148,8 @@ public class McpServerService
                     {
                         new
                         {
-                            name = "get_credentials",
-                            description = "Solicita de forma segura as credenciais (usuário e senha) para um domínio específico do gerenciador de senhas. Esta operação exige o consentimento explícito do usuário final na tela do aplicativo.",
-                            inputSchema = new
-                            {
-                                type = "object",
-                                properties = new
-                                {
-                                    domain = new
-                                    {
-                                        type = "string",
-                                        description = "O domínio ou endereço do site/serviço para o qual as credenciais são solicitadas (ex: github.com, google.com)."
-                                    }
-                                },
-                                required = new[] { "domain" }
-                            }
-                        },
-                        new
-                        {
                             name = "get_api_token",
-                            description = "Solicita a geração assíncrona de um token de acesso temporário (JWT) para uma API específica (ex: reciprocidade). Esta chamada exige consentimento do usuário na interface gráfica e usa as credenciais armazenadas sem revelá-las no chat da IA.",
+                            description = "Solicita a geração de um token de acesso JWT para uma API cadastrada no cofre (ex: reciprocidade). Exige consentimento explícito do usuário na interface gráfica. As credenciais (client_id e client_secret) nunca são expostas ao agente de IA.",
                             inputSchema = new
                             {
                                 type = "object",
@@ -176,7 +158,7 @@ public class McpServerService
                                     api_name = new
                                     {
                                         type = "string",
-                                        description = "O nome da API para a qual o token JWT é solicitado (ex: reciprocidade)."
+                                        description = "Nome da API cadastrada no cofre para a qual o token JWT é solicitado (ex: reciprocidade)."
                                     }
                                 },
                                 required = new[] { "api_name" }
@@ -194,64 +176,7 @@ public class McpServerService
                 }
 
                 var toolName = paramsEl.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : null;
-                if (toolName == "get_credentials")
-                {
-                    if (!paramsEl.TryGetProperty("arguments", out var argsEl) ||
-                        !argsEl.TryGetProperty("domain", out var domainProp) ||
-                        domainProp.ValueKind != JsonValueKind.String)
-                    {
-                        SendError(id, -32602, "Argumento 'domain' inválido ou ausente.");
-                        return;
-                    }
-
-                    var domain = domainProp.GetString() ?? "";
-
-                    try
-                    {
-                        // Solicita consentimento do usuário via serviço coordenador na UI
-                        LogToErrorStream($"Aguardando consentimento do usuário para o domínio: {domain}");
-                        
-                        ConsentResponse consent = await _consentService.RequestConsentAsync("Agente de IA", domain);
-
-                        if (consent.Approved)
-                        {
-                            LogToErrorStream($"Acesso aprovado pelo usuário para o domínio: {domain}");
-                            SendResponse(id, new
-                            {
-                                content = new[]
-                                {
-                                    new
-                                    {
-                                        type = "text",
-                                        text = $"username: {consent.Username}\npassword: {consent.Password}"
-                                    }
-                                }
-                            });
-                        }
-                        else
-                        {
-                            LogToErrorStream($"Acesso rejeitado pelo usuário para o domínio: {domain}");
-                            SendResponse(id, new
-                            {
-                                isError = true,
-                                content = new[]
-                                {
-                                    new
-                                    {
-                                        type = "text",
-                                        text = "Acesso às credenciais foi expressamente rejeitado pelo usuário."
-                                    }
-                                }
-                            });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogToErrorStream($"Erro no fluxo de consentimento: {ex.Message}");
-                        SendError(id, -32001, $"Erro interno ao solicitar consentimento: {ex.Message}");
-                    }
-                }
-                else if (toolName == "get_api_token")
+                if (toolName == "get_api_token")
                 {
                     if (!paramsEl.TryGetProperty("arguments", out var argsEl) ||
                         !argsEl.TryGetProperty("api_name", out var apiNameProp) ||

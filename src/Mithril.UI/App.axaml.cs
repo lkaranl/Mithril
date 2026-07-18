@@ -38,8 +38,9 @@ public partial class App : Application
         serviceCollection.AddSingleton<IMcpConsentService>(mcpConsentService);
         serviceCollection.AddSingleton(mcpConsentService); // Permite injeção como concreto
 
-        // 3. Registrar o Servidor MCP
+        // 3. Registrar o Servidor MCP (stdio e sse)
         serviceCollection.AddSingleton<McpServerService>();
+        serviceCollection.AddSingleton<McpSseServerService>();
 
         // 4. Registrar ViewModels
         serviceCollection.AddTransient<MainViewModel>();
@@ -47,8 +48,9 @@ public partial class App : Application
         // Construir o provedor
         Services = serviceCollection.BuildServiceProvider();
 
-        // Obter o Servidor MCP
+        // Obter os Servidores MCP
         var mcpServer = Services.GetRequiredService<McpServerService>();
+        var mcpSseServer = Services.GetRequiredService<McpSseServerService>();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -60,16 +62,21 @@ public partial class App : Application
 
             desktop.MainWindow = mainWindow;
 
-            // Roda o servidor MCP em background apenas após a janela estar totalmente aberta na tela (Evita travar o loop do Cocoa no Mac)
+            // Roda os servidores MCP em background apenas após a janela estar totalmente aberta na tela (Evita travar o loop do Cocoa no Mac)
             mainWindow.Opened += (sender, e) =>
             {
                 mcpServer.Start();
+                if (mainViewModel.IsSseServerActive)
+                {
+                    mcpSseServer.Start();
+                }
             };
 
             // Certifica-se de parar as threads do servidor MCP ao encerrar a GUI
             desktop.Exit += (sender, e) =>
             {
                 mcpServer.Stop();
+                mcpSseServer.Stop();
             };
         }
 

@@ -99,7 +99,7 @@
         <!-- TOPBAR                                             -->
         <!-- ═══════════════════════════════════════════════════ -->
         <Border Grid.Row="0" Background="#13131E" Padding="20,14" BorderBrush="#1E1E30" BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="Auto, *, Auto">
+            <Grid ColumnDefinitions="Auto, *, Auto, Auto">
                 <!-- Logo e nome -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                     <Border Background="#5B6EF5" CornerRadius="10" Width="36" Height="36">
@@ -144,8 +144,15 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Switch do Servidor de Rede (SSE) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,0"
+                            IsVisible="{Binding IsVaultOpen}">
+                    <TextBlock Text="Servidor de Rede" FontSize="11" Foreground="#5A5A78" VerticalAlignment="Center"/>
+                    <ToggleSwitch IsChecked="{Binding IsSseServerActive}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                </StackPanel>
+
                 <!-- Contador de credenciais -->
-                <Border Grid.Column="2" CornerRadius="8" Padding="10,5" Background="#1E1E2E"
+                <Border Grid.Column="3" CornerRadius="8" Padding="10,5" Background="#1E1E2E"
                         IsVisible="{Binding IsVaultOpen}">
                     <TextBlock FontSize="11" Foreground="#6E6E90">
                         <Run Text="{Binding Credentials.Count}"/>
@@ -215,7 +222,7 @@
             <!-- ───────────────────────────────────────────── -->
             <!-- PAINEL PRINCIPAL DO COFRE                     -->
             <!-- ───────────────────────────────────────────── -->
-            <Grid IsVisible="{Binding IsVaultOpen}" RowDefinitions="Auto, *" Margin="20,16,20,16" RowSpacing="12">
+            <Grid IsVisible="{Binding IsVaultOpen}" RowDefinitions="Auto, Auto, *" Margin="20,16,20,16" RowSpacing="12">
 
                 <!-- Toolbar do painel -->
                 <Grid Grid.Row="0" ColumnDefinitions="*, Auto">
@@ -237,78 +244,173 @@
                     </StackPanel>
                 </Grid>
 
+                <!-- Banner de Notificação Reativa -->
+                <Border Grid.Row="1" IsVisible="{Binding IsNotificationOpen}"
+                        CornerRadius="8" Padding="14,10"
+                        BorderThickness="1">
+                    <Border.Styles>
+                        <!-- Padrão (Info) -->
+                        <Style Selector="Border">
+                            <Setter Property="Background" Value="#111A2E"/>
+                            <Setter Property="BorderBrush" Value="#3B82F6"/>
+                        </Style>
+                        <!-- Sucesso -->
+                        <Style Selector="Border[Tag=Success]">
+                            <Setter Property="Background" Value="#0F2115"/>
+                            <Setter Property="BorderBrush" Value="#22C55E"/>
+                        </Style>
+                        <!-- Erro -->
+                        <Style Selector="Border[Tag=Error]">
+                            <Setter Property="Background" Value="#2A161A"/>
+                            <Setter Property="BorderBrush" Value="#EF4444"/>
+                        </Style>
+                    </Border.Styles>
+                    <Border.Tag>
+                        <Binding Path="NotificationType"/>
+                    </Border.Tag>
+                    
+                    <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
+                        <!-- Ícone -->
+                        <Panel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="ℹ️" FontSize="14" IsVisible="{Binding NotificationType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Info}"/>
+                            <TextBlock Text="✅" FontSize="14" IsVisible="{Binding NotificationType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Success}"/>
+                            <TextBlock Text="❌" FontSize="14" IsVisible="{Binding NotificationType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Error}"/>
+                        </Panel>
+
+                        <!-- Mensagem -->
+                        <TextBlock Grid.Column="1" Text="{Binding NotificationMessage}" FontSize="12" 
+                                   Foreground="#E8E8F8" VerticalAlignment="Center" TextWrapping="Wrap"/>
+
+                        <!-- Botão Fechar -->
+                        <Button Grid.Column="2" Classes="icon-btn" Command="{Binding CloseNotificationCommand}" VerticalAlignment="Center">
+                            <TextBlock Text="✕" FontSize="11" Foreground="#8E8EAF"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
                 <!-- Área central: lista OR formulário -->
-                <Grid Grid.Row="1">
+                <Grid Grid.Row="2">
 
-                    <!-- LISTA DE CREDENCIAIS -->
-                    <Border IsVisible="{Binding !IsAddFormOpen}"
-                            Background="#0F0F1A"
-                            BorderBrush="#1A1A28"
-                            BorderThickness="1"
-                            CornerRadius="12"
-                            Padding="8">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ListBox ItemsSource="{Binding Credentials}">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Margin="4,3" CornerRadius="10"
-                                                Background="#13131E"
-                                                BorderBrush="#1E1E2E"
-                                                BorderThickness="1"
-                                                Padding="14,12">
-                                            <Border.Styles>
-                                                <Style Selector="Border:pointerover">
-                                                    <Setter Property="Background" Value="#17172A"/>
-                                                    <Setter Property="BorderBrush" Value="#2A2A44"/>
-                                                </Style>
-                                            </Border.Styles>
-                                            <Grid ColumnDefinitions="Auto, *, Auto">
-                                                <!-- Ícone do tipo -->
-                                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="10" Margin="0,0,12,0" VerticalAlignment="Center" Background="#1E2A1E">
-                                                    <Panel>
-                                                        <TextBlock Text="🌐" FontSize="18"
-                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                   IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}"/>
-                                                        <TextBlock Text="⚡" FontSize="18"
-                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                   IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"/>
-                                                    </Panel>
-                                                </Border>
+                    <!-- LISTA DE CREDENCIAIS (Com Filtro e Busca) -->
+                    <Grid IsVisible="{Binding !IsAddFormOpen}" RowDefinitions="Auto, *">
+                        
+                        <!-- Barra de Busca & Filtro de Categorias -->
+                        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" ColumnSpacing="12" Margin="0,0,0,12">
+                            <!-- Input de Busca -->
+                            <TextBox Grid.Column="0" Classes="field"
+                                     Text="{Binding SearchText}"
+                                     PlaceholderText="Buscar por domínio ou usuário..."/>
+                            
+                            <!-- Dropdown de Filtro de Categoria -->
+                            <ComboBox Grid.Column="1" 
+                                      ItemsSource="{Binding FilterCategories}"
+                                      SelectedItem="{Binding SelectedCategoryFilter}"
+                                      Width="160"
+                                      Background="#13131E"
+                                      BorderBrush="#2A2A40"
+                                      BorderThickness="1"
+                                      CornerRadius="8"
+                                      Padding="10,6"/>
+                        </Grid>
 
-                                                <!-- Informações -->
-                                                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Domain}" FontSize="14"
-                                                               FontWeight="SemiBold" Foreground="#E0E0F0"/>
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{Binding Username}" FontSize="12" Foreground="#6A6A88"/>
-                                                        <Border CornerRadius="4" Padding="5,1"
-                                                                IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"
-                                                                Background="#0E1830" BorderBrush="#1E3A6A" BorderThickness="1">
-                                                            <TextBlock Text="OAuth2 · JWT" FontSize="9" Foreground="#3B82F6" FontWeight="Medium"/>
-                                                        </Border>
-                                                        <Border CornerRadius="4" Padding="5,1"
-                                                                Background="#1A0E0E" BorderBrush="#3D1515" BorderThickness="1">
-                                                            <TextBlock Text="AES-256" FontSize="9" Foreground="#EF4444" FontWeight="Medium"/>
-                                                        </Border>
+                        <Border Grid.Row="1"
+                                Background="#0F0F1A"
+                                BorderBrush="#1A1A28"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="8">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ListBox ItemsSource="{Binding FilteredCredentials}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="4,3" CornerRadius="10"
+                                                    Background="#13131E"
+                                                    BorderBrush="#1E1E2E"
+                                                    BorderThickness="1"
+                                                    Padding="14,12">
+                                                <Border.Styles>
+                                                    <Style Selector="Border:pointerover">
+                                                        <Setter Property="Background" Value="#17172A"/>
+                                                        <Setter Property="BorderBrush" Value="#2A2A44"/>
+                                                    </Style>
+                                                </Border.Styles>
+                                                <Grid ColumnDefinitions="Auto, *, Auto">
+                                                    <!-- Ícone do tipo -->
+                                                    <Border Grid.Column="0" Width="40" Height="40" CornerRadius="10" Margin="0,0,12,0" VerticalAlignment="Center" Background="#1E2A1E">
+                                                        <Panel>
+                                                            <TextBlock Text="🌐" FontSize="18"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}"/>
+                                                            <TextBlock Text="⚡" FontSize="18"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"/>
+                                                        </Panel>
+                                                    </Border>
+
+                                                    <!-- Informações -->
+                                                    <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock Text="{Binding Domain}" FontSize="14"
+                                                                       FontWeight="SemiBold" Foreground="#E0E0F0"/>
+                                                            <Border CornerRadius="6" Padding="6,2" Background="#1E1E38">
+                                                                <TextBlock Text="{Binding Category}" FontSize="9" Foreground="#9E9EB8" FontWeight="SemiBold"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock Text="{Binding Username}" FontSize="12" Foreground="#6A6A88"/>
+                                                            <Border CornerRadius="4" Padding="5,1"
+                                                                    IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"
+                                                                    Background="#0E1830" BorderBrush="#1E3A6A" BorderThickness="1">
+                                                                <TextBlock Text="OAuth2 · JWT" FontSize="9" Foreground="#3B82F6" FontWeight="Medium"/>
+                                                            </Border>
+                                                            <Border CornerRadius="4" Padding="5,1"
+                                                                    Background="#1A0E0E" BorderBrush="#3D1515" BorderThickness="1">
+                                                                <TextBlock Text="AES-256" FontSize="9" Foreground="#EF4444" FontWeight="Medium"/>
+                                                            </Border>
+                                                        </StackPanel>
                                                     </StackPanel>
-                                                </StackPanel>
 
-                                                <!-- Ações -->
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                    <Button Classes="icon-btn"
-                                                            ToolTip.Tip="Editar"
-                                                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).EditCredentialCommand}"
-                                                            CommandParameter="{Binding}">
-                                                        <TextBlock Text="✏" FontSize="13" Foreground="#5A5A80"/>
-                                                    </Button>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                        </ScrollViewer>
-                    </Border>
+                                                    <!-- Ações de Um Clique & Edição -->
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                        <!-- Copiar Usuário -->
+                                                        <Button Classes="icon-btn"
+                                                                ToolTip.Tip="Copiar Usuário / Client ID"
+                                                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CopyToClipboardCommand}"
+                                                                CommandParameter="{Binding Username}">
+                                                            <TextBlock Text="👤📋" FontSize="12" Foreground="#5A5A80"/>
+                                                        </Button>
+                                                        <!-- Copiar Senha (Apenas para Web) -->
+                                                        <Button Classes="icon-btn"
+                                                                ToolTip.Tip="Copiar Senha"
+                                                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CopyPasswordCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}">
+                                                            <TextBlock Text="🔑📋" FontSize="12" Foreground="#5A5A80"/>
+                                                        </Button>
+                                                        <!-- Gerar e Copiar Token (Apenas para API) -->
+                                                        <Button Classes="icon-btn"
+                                                                ToolTip.Tip="Gerar e Copiar Token JWT"
+                                                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CopyPasswordCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}">
+                                                            <TextBlock Text="⚡📋" FontSize="12" Foreground="#5B6EF5"/>
+                                                        </Button>
+                                                        <!-- Editar -->
+                                                        <Button Classes="icon-btn"
+                                                                ToolTip.Tip="Editar"
+                                                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).EditCredentialCommand}"
+                                                                CommandParameter="{Binding}">
+                                                            <TextBlock Text="✏" FontSize="13" Foreground="#5A5A80"/>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
 
                     <!-- FORMULÁRIO DE CADASTRO / EDIÇÃO -->
                     <Border IsVisible="{Binding IsAddFormOpen}"
@@ -341,37 +443,36 @@
                                 <!-- Separador -->
                                 <Border Height="1" Background="#1A1A28"/>
 
-                                <!-- Tipo de credencial -->
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="TIPO" FontSize="10" FontWeight="SemiBold"
-                                               Foreground="#4A4A68" LetterSpacing="1"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <Border CornerRadius="8" Padding="14,8" Cursor="Hand">
-                                            <Border.Styles>
-                                                <Style Selector="Border">
-                                                    <Setter Property="Background" Value="#1A1A2E"/>
-                                                    <Setter Property="BorderBrush" Value="#2A2A44"/>
-                                                    <Setter Property="BorderThickness" Value="1"/>
-                                                </Style>
-                                            </Border.Styles>
-                                            <RadioButton Content="🌐  Web (Login)"
+                                <!-- Tipo de credencial & Categoria -->
+                                <Grid ColumnDefinitions="*, *" ColumnSpacing="14">
+                                    <!-- Tipo de credencial -->
+                                    <StackPanel Grid.Column="0" Spacing="8">
+                                        <TextBlock Text="TIPO" FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="#4A4A68" LetterSpacing="1"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <RadioButton Content="🌐 Web"
                                                          IsChecked="{Binding NewCredentialType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}"
-                                                         Foreground="#B0B0D0" FontSize="13"/>
-                                        </Border>
-                                        <Border CornerRadius="8" Padding="14,8" Cursor="Hand">
-                                            <Border.Styles>
-                                                <Style Selector="Border">
-                                                    <Setter Property="Background" Value="#1A1A2E"/>
-                                                    <Setter Property="BorderBrush" Value="#2A2A44"/>
-                                                    <Setter Property="BorderThickness" Value="1"/>
-                                                </Style>
-                                            </Border.Styles>
-                                            <RadioButton Content="⚡  API (Token JWT)"
+                                                         Foreground="#B0B0D0" FontSize="12"/>
+                                            <RadioButton Content="⚡ API"
                                                          IsChecked="{Binding NewCredentialType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"
-                                                         Foreground="#B0B0D0" FontSize="13"/>
-                                        </Border>
+                                                         Foreground="#B0B0D0" FontSize="12"/>
+                                        </StackPanel>
                                     </StackPanel>
-                                </StackPanel>
+
+                                    <!-- Categoria -->
+                                    <StackPanel Grid.Column="1" Spacing="8">
+                                        <TextBlock Text="CATEGORIA" FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="#4A4A68" LetterSpacing="1"/>
+                                        <ComboBox ItemsSource="{Binding Categories}"
+                                                  SelectedItem="{Binding NewCategory}"
+                                                  HorizontalAlignment="Stretch"
+                                                  Background="#13131E"
+                                                  BorderBrush="#2A2A44"
+                                                  BorderThickness="1"
+                                                  CornerRadius="8"
+                                                  Padding="10,6"/>
+                                    </StackPanel>
+                                </Grid>
 
                                 <!-- Campos linha 1 -->
                                 <Grid ColumnDefinitions="*, *" ColumnSpacing="14">
@@ -396,9 +497,23 @@
                                     <StackPanel Grid.Column="0" Spacing="6">
                                         <TextBlock Text="SENHA / CLIENT SECRET" FontSize="10" FontWeight="SemiBold"
                                                    Foreground="#4A4A68" LetterSpacing="1"/>
-                                        <TextBox Classes="field"
-                                                 Text="{Binding NewPassword}"
-                                                 PlaceholderText="Senha ou Client Secret"/>
+                                        <Grid ColumnDefinitions="*, Auto" ColumnSpacing="6">
+                                            <TextBox Grid.Column="0" Classes="field"
+                                                     Text="{Binding NewPassword}"
+                                                     PlaceholderText="Senha ou Client Secret"/>
+                                            <Button Grid.Column="1" Content="⚡ Gerar"
+                                                    Command="{Binding GeneratePasswordCommand}"
+                                                    Background="#1E1E38"
+                                                    Foreground="#5B6EF5"
+                                                    BorderBrush="#2A2A5A"
+                                                    BorderThickness="1"
+                                                    Padding="10"
+                                                    CornerRadius="8"
+                                                    FontSize="11"
+                                                    FontWeight="SemiBold"
+                                                    Cursor="Hand"
+                                                    ToolTip.Tip="Gerar senha aleatória forte"/>
+                                        </Grid>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Spacing="6"
                                                 IsEnabled="{Binding NewCredentialType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"
@@ -406,8 +521,8 @@
                                         <TextBlock Text="URL DO TOKEN (OAUTH2)" FontSize="10" FontWeight="SemiBold"
                                                    Foreground="#4A4A68" LetterSpacing="1"/>
                                         <TextBox Classes="field"
-                                                 Text="{Binding NewTokenUrl}"
-                                                 PlaceholderText="https://api.server.com/token"/>
+                                                  Text="{Binding NewTokenUrl}"
+                                                  PlaceholderText="https://api.server.com/token"/>
                                     </StackPanel>
                                 </Grid>
 

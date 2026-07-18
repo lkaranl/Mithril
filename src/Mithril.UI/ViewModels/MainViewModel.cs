@@ -5,11 +5,13 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mithril.Domain.Exceptions;
 using Mithril.Domain.Interfaces;
 using Mithril.Domain.Models;
+using Mithril.Infrastructure.Mcp;
 using Mithril.UI.Services;
 using Mithril.UI.Views;
 
@@ -21,6 +23,8 @@ public partial class MainViewModel : ViewModelBase
     private readonly IVaultRepository _vaultRepository;
     private readonly IBackupService _backupService;
     private readonly McpConsentService _mcpConsentService;
+    private readonly McpSseServerService _sseServer;
+    private readonly ITokenExchangeService _tokenExchangeService;
 
     private byte[]? _currentVaultKey;
     private VaultData? _currentVault;
@@ -31,6 +35,15 @@ public partial class MainViewModel : ViewModelBase
     private string _statusMessage = "Cofre Fechado. Crie ou abra seu cofre.";
 
     [ObservableProperty]
+    private string _notificationMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _notificationType = "Info"; // Info, Success, Error
+
+    [ObservableProperty]
+    private bool _isNotificationOpen;
+
+    [ObservableProperty]
     private bool _isVaultOpen;
 
     [ObservableProperty]
@@ -39,16 +52,38 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private ObservableCollection<Credential> _credentials = new();
 
+    [ObservableProperty]
+    private ObservableCollection<Credential> _filteredCredentials = new();
+
+    [ObservableProperty]
+    private ObservableCollection<string> _categories = new() { "Geral", "Trabalho", "Pessoal", "Produção", "Homologação" };
+
+    [ObservableProperty]
+    private ObservableCollection<string> _filterCategories = new() { "Todos", "Geral", "Trabalho", "Pessoal", "Produção", "Homologação" };
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private string _selectedCategoryFilter = "Todos";
+
+    [ObservableProperty]
+    private bool _isSseServerActive;
+
     public MainViewModel(
         ISecurityService securityService,
         IVaultRepository vaultRepository,
         IBackupService backupService,
-        McpConsentService mcpConsentService)
+        McpConsentService mcpConsentService,
+        McpSseServerService sseServer,
+        ITokenExchangeService tokenExchangeService)
     {
         _securityService = securityService;
         _vaultRepository = vaultRepository;
         _backupService = backupService;
         _mcpConsentService = mcpConsentService;
+        _sseServer = sseServer;
+        _tokenExchangeService = tokenExchangeService;
 
         // Locais padrão para o cofre e backups dentro da pasta do usuário ou app
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -58,6 +93,117 @@ public partial class MainViewModel : ViewModelBase
 
         // Registrar o callback de consentimento que conecta o Servidor MCP com a UI
         _mcpConsentService.OnConsentRequested = HandleMcpConsentRequestAsync;
+
+        // O servidor de rede inicia desativado por padrão por motivos de segurança (Secure by Default)
+        _isSseServerActive = false;
+    }
+
+    partial void OnSearchTextChanged(string value) => ApplyFilters();
+    partial void OnSelectedCategoryFilterChanged(string value) => ApplyFilters();
+
+    private void ApplyFilters()
+    {
+        FilteredCredentials.Clear();
+        foreach (var cred in Credentials)
+        {
+            if (string.IsNullOrEmpty(cred.Category))
+            {
+                cred.Category = "Geral";
+            }
+
+            bool matchCategory = SelectedCategoryFilter == "Todos" || string.Equals(cred.Category, SelectedCategoryFilter, StringComparison.OrdinalIgnoreCase);
+            bool matchSearch = string.IsNullOrWhiteSpace(SearchText) ||
+                               cred.Domain.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                               cred.Username.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+
+            if (matchCategory && matchSearch)
+            {
+                FilteredCredentials.Add(cred);
+            }
+        }
+    }
+
+    private bool _isChangingSseState;
+
+    partial void OnIsSseServerActiveChanged(bool value)
+    {
+        if (_isChangingSseState) return;
+
+        if (value)
+        {
+            // O usuário tentou ativar o servidor de rede.
+            // Abrimos o diálogo modal de confirmação na thread da UI.
+            _ = Task.Run(async () =>
+            {
+                bool confirmed = false;
+
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    var desktop = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                    if (desktop?.MainWindow != null)
+                    {
+                        var dialog = new SseConfirmWindow();
+                        confirmed = await dialog.ShowDialog<bool>(desktop.MainWindow);
+                    }
+                });
+
+                if (confirmed)
+                {
+                    _sseServer.Start();
+                    StatusMessage = "⚠️ AVISO DE SEGURANÇA: Servidor MCP de rede local ativado na porta 12121! Portas expostas podem ser acessadas por outros hosts da LAN.";
+                }
+                else
+                {
+                    // Reverte o switch na UI sem disparar recursão
+                    _isChangingSseState = true;
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        IsSseServerActive = false;
+                    });
+                    _isChangingSseState = false;
+
+                    _sseServer.Stop();
+                    StatusMessage = "🔒 Ativação cancelada pelo usuário. Servidor de rede permanece inativo.";
+                }
+            });
+        }
+        else
+        {
+            // O usuário tentou desativar o servidor de rede.
+            // Abrimos o diálogo modal de confirmação de desconexão na thread da UI.
+            _ = Task.Run(async () =>
+            {
+                bool confirmed = false;
+
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    var desktop = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                    if (desktop?.MainWindow != null)
+                    {
+                        var dialog = new SseDisconnectWindow();
+                        confirmed = await dialog.ShowDialog<bool>(desktop.MainWindow);
+                    }
+                });
+
+                if (confirmed)
+                {
+                    _sseServer.Stop();
+                    StatusMessage = "🔒 Servidor MCP de rede local desativado com segurança.";
+                }
+                else
+                {
+                    // Reverte o switch na UI de volta para true (mantém ligado) sem disparar recursão
+                    _isChangingSseState = true;
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        IsSseServerActive = true;
+                    });
+                    _isChangingSseState = false;
+
+                    StatusMessage = "⚠️ Desativação cancelada pelo usuário. Servidor de rede permanece ativo na porta 12121.";
+                }
+            });
+        }
     }
 
     [RelayCommand]
@@ -133,7 +279,8 @@ public partial class MainViewModel : ViewModelBase
                     Type = CredentialType.Web,
                     Domain = "github.com",
                     Username = "dev_ai",
-                    EncryptedPassword = encryptedPassBase64
+                    EncryptedPassword = encryptedPassBase64,
+                    Category = "Pessoal"
                 });
 
                 // Adicionar credenciais iniciais de demonstração (API de Reciprocidade)
@@ -147,7 +294,8 @@ public partial class MainViewModel : ViewModelBase
                     Domain = "reciprocidade",
                     Username = "client_id_reciprocidade",
                     EncryptedPassword = encryptedSecretBase64,
-                    TokenUrl = "https://api.reciprocidade.com.br/v1/auth/token"
+                    TokenUrl = "https://api.reciprocidade.com.br/v1/auth/token",
+                    Category = "Trabalho"
                 });
 
                 await _vaultRepository.SaveVaultAsync(_defaultVaultPath, newVault, derivedKey);
@@ -162,11 +310,13 @@ public partial class MainViewModel : ViewModelBase
         catch (SecurityException ex)
         {
             StatusMessage = $"Erro de Segurança: {ex.Message}";
+            ShowNotification("Erro de Segurança: Senha Mestre incorreta ou dados corrompidos.", "Error");
             IsVaultOpen = false;
         }
         catch (Exception ex)
         {
             StatusMessage = $"Erro: {ex.Message}";
+            ShowNotification($"Erro ao abrir o cofre: {ex.Message}", "Error");
             IsVaultOpen = false;
         }
     }
@@ -184,11 +334,14 @@ public partial class MainViewModel : ViewModelBase
         {
             StatusMessage = "Gerando backup físico criptografado...";
             string backupPath = await _backupService.CreateBackupAsync(_defaultVaultPath, _defaultBackupDirectory);
-            StatusMessage = $"Backup gerado e assinado com SHA-256 em: {Path.GetFileName(backupPath)}";
+            string msg = $"Backup gerado e assinado com sucesso: {Path.GetFileName(backupPath)}";
+            StatusMessage = msg;
+            ShowNotification(msg, "Success");
         }
         catch (Exception ex)
         {
             StatusMessage = $"Falha no backup: {ex.Message}";
+            ShowNotification($"Erro físico ao gerar backup: {ex.Message}", "Error");
         }
     }
 
@@ -199,9 +352,14 @@ public partial class MainViewModel : ViewModelBase
         {
             foreach (var cred in _currentVault.Credentials)
             {
+                if (string.IsNullOrEmpty(cred.Category))
+                {
+                    cred.Category = "Geral";
+                }
                 Credentials.Add(cred);
             }
         }
+        ApplyFilters();
     }
 
     // Método assíncrono que exibe o Modal de Consentimento na thread da UI
@@ -318,6 +476,9 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private string _newTokenUrl = string.Empty;
 
+    [ObservableProperty]
+    private string _newCategory = "Geral";
+
     [RelayCommand]
     private void ToggleAddForm()
     {
@@ -330,6 +491,7 @@ public partial class MainViewModel : ViewModelBase
             NewPassword = string.Empty;
             NewTokenUrl = string.Empty;
             NewCredentialType = CredentialType.Web;
+            NewCategory = "Geral";
             IsEditing = false;
             _editingCredentialId = null;
         }
@@ -353,6 +515,7 @@ public partial class MainViewModel : ViewModelBase
             NewTokenUrl = credential.TokenUrl;
             NewCredentialType = credential.Type;
             NewPassword = plainPassword;
+            NewCategory = string.IsNullOrEmpty(credential.Category) ? "Geral" : credential.Category;
 
             _editingCredentialId = credential.Id;
             IsEditing = true;
@@ -371,18 +534,21 @@ public partial class MainViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(NewDomain) || string.IsNullOrWhiteSpace(NewUsername) || string.IsNullOrWhiteSpace(NewPassword))
         {
             StatusMessage = "Os campos Domínio/API, Usuário/Client ID e Senha/Client Secret são obrigatórios.";
+            ShowNotification("Por favor, preencha todos os campos obrigatórios.", "Info");
             return;
         }
 
         if (NewCredentialType == CredentialType.ApiToken && string.IsNullOrWhiteSpace(NewTokenUrl))
         {
             StatusMessage = "A URL de Token da API é obrigatória para credenciais de API.";
+            ShowNotification("Por favor, informe a URL de Token da API.", "Info");
             return;
         }
 
         if (_currentVault == null || _currentVaultKey == null)
         {
             StatusMessage = "O cofre precisa estar aberto para salvar uma credencial.";
+            ShowNotification("O cofre precisa estar aberto para salvar credenciais.", "Error");
             return;
         }
 
@@ -414,13 +580,16 @@ public partial class MainViewModel : ViewModelBase
                     target.Username = NewUsername.Trim();
                     target.EncryptedPassword = encryptedBase64;
                     target.TokenUrl = NewCredentialType == CredentialType.ApiToken ? NewTokenUrl.Trim() : string.Empty;
+                    target.Category = NewCategory;
                     target.LastModifiedAt = DateTime.UtcNow;
 
                     StatusMessage = $"Credencial para '{target.Domain}' editada com sucesso!";
+                    ShowNotification($"Credencial para '{target.Domain}' editada com sucesso!", "Success");
                 }
                 else
                 {
                     StatusMessage = "Credencial original não encontrada no cofre.";
+                    ShowNotification("Erro: Credencial original não encontrada no cofre.", "Error");
                 }
             }
             else
@@ -432,11 +601,13 @@ public partial class MainViewModel : ViewModelBase
                     Domain = NewDomain.Trim(),
                     Username = NewUsername.Trim(),
                     EncryptedPassword = encryptedBase64,
-                    TokenUrl = NewCredentialType == CredentialType.ApiToken ? NewTokenUrl.Trim() : string.Empty
+                    TokenUrl = NewCredentialType == CredentialType.ApiToken ? NewTokenUrl.Trim() : string.Empty,
+                    Category = NewCategory
                 };
 
                 _currentVault.Credentials.Add(newCred);
                 StatusMessage = $"Nova credencial para '{newCred.Domain}' adicionada com sucesso!";
+                ShowNotification($"Nova credencial para '{newCred.Domain}' adicionada com sucesso!", "Success");
             }
 
             // Persistir no arquivo físico
@@ -452,6 +623,133 @@ public partial class MainViewModel : ViewModelBase
         catch (Exception ex)
         {
             StatusMessage = $"Erro ao salvar alterações no cofre: {ex.Message}";
+            ShowNotification($"Erro ao salvar no cofre: {ex.Message}", "Error");
         }
+    }
+
+    [RelayCommand]
+    private void GeneratePassword()
+    {
+        NewPassword = GenerateStrongPassword(16);
+        StatusMessage = "Senha/Secret forte gerada com sucesso!";
+    }
+
+    [RelayCommand]
+    private async Task CopyToClipboard(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        var desktop = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+        var clipboard = desktop?.MainWindow?.Clipboard;
+        if (clipboard != null)
+        {
+            await clipboard.SetTextAsync(text);
+            StatusMessage = "Copiado para a área de transferência!";
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyPasswordAsync(Credential credential)
+    {
+        if (credential == null || _currentVaultKey == null) return;
+        try
+        {
+            byte[] encryptedBytes = Convert.FromBase64String(credential.EncryptedPassword);
+            byte[] decryptedBytes = _securityService.Decrypt(encryptedBytes, _currentVaultKey);
+            string plainPassword = System.Text.Encoding.UTF8.GetString(decryptedBytes);
+
+            if (credential.Type == CredentialType.ApiToken)
+            {
+                StatusMessage = $"Gerando token JWT para a API '{credential.Domain}'...";
+                
+                if (string.IsNullOrEmpty(credential.TokenUrl) || string.IsNullOrEmpty(credential.Username) || string.IsNullOrEmpty(plainPassword))
+                {
+                    StatusMessage = "Erro: Configurações de API incompletas para gerar o token.";
+                    ShowNotification("Erro: Configurações de API incompletas para gerar o token.", "Error");
+                    return;
+                }
+
+                string jwtToken = await _tokenExchangeService.GetAccessTokenAsync(credential.TokenUrl, credential.Username, plainPassword);
+                await CopyToClipboard(jwtToken);
+                string successMsg = $"🔒 Token JWT para '{credential.Domain}' gerado e copiado!";
+                StatusMessage = successMsg;
+                ShowNotification(successMsg, "Success");
+            }
+            else
+            {
+                await CopyToClipboard(plainPassword);
+                string successMsg = $"🔒 Senha para '{credential.Domain}' copiada com sucesso!";
+                StatusMessage = successMsg;
+                ShowNotification(successMsg, "Success");
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Erro ao obter dados: {ex.Message}";
+            ShowNotification($"Falha ao gerar Token JWT: {ex.Message}", "Error");
+        }
+    }
+
+    private static string GenerateStrongPassword(int length = 16)
+    {
+        const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string lower = "abcdefghijklmnopqrstuvwxyz";
+        const string digits = "0123456789";
+        const string specials = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+        string allChars = upper + lower + digits + specials;
+
+        var bytes = new byte[length];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
+
+        var result = new System.Text.StringBuilder();
+        result.Append(upper[bytes[0] % upper.Length]);
+        result.Append(lower[bytes[1] % lower.Length]);
+        result.Append(digits[bytes[2] % digits.Length]);
+        result.Append(specials[bytes[3] % specials.Length]);
+
+        for (int i = 4; i < length; i++)
+        {
+            result.Append(allChars[bytes[i] % allChars.Length]);
+        }
+
+        var rawResult = result.ToString().ToCharArray();
+        var shuffleBytes = new byte[rawResult.Length];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(shuffleBytes);
+        for (int i = rawResult.Length - 1; i > 0; i--)
+        {
+            int j = shuffleBytes[i] % (i + 1);
+            var temp = rawResult[i];
+            rawResult[i] = rawResult[j];
+            rawResult[j] = temp;
+        }
+
+        return new string(rawResult);
+    }
+
+    private void ShowNotification(string message, string type = "Info")
+    {
+        NotificationMessage = message;
+        NotificationType = type;
+        IsNotificationOpen = true;
+
+        if (type != "Error")
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(5000);
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (NotificationMessage == message)
+                    {
+                        IsNotificationOpen = false;
+                    }
+                });
+            });
+        }
+    }
+
+    [RelayCommand]
+    private void CloseNotification()
+    {
+        IsNotificationOpen = false;
     }
 }

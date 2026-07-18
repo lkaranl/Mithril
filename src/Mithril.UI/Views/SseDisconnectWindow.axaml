@@ -1,0 +1,45 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Mithril.UI.Views.SseDisconnectWindow"
+        Title="Aviso de Segurança"
+        Width="460" Height="250"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#0D0D12">
+
+    <Border BorderBrush="#1E1E2E" BorderThickness="1" Padding="24" CornerRadius="12">
+        <Grid RowDefinitions="*, Auto">
+            <!-- Conteúdo -->
+            <StackPanel Grid.Row="0" Spacing="16">
+                <!-- Ícone de Alerta -->
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Border Background="#2A1010" BorderBrush="#EF4444" BorderThickness="1" CornerRadius="8" Width="36" Height="36">
+                        <TextBlock Text="🔒" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Confirmar Desativação do Servidor" FontSize="16" FontWeight="Bold" Foreground="#E8E8F8" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Conseqüências -->
+                <TextBlock Text="Você está prestes a desativar o Servidor MCP de rede local. Por favor, atente-se às seguintes consequências:" 
+                           FontSize="12" Foreground="#A0A0C0" TextWrapping="Wrap"/>
+
+                <StackPanel Spacing="6" Margin="4,0,0,0">
+                    <TextBlock Text="• Todas as conexões e sessões ativas de agentes de IA na rede serão encerradas imediatamente." 
+                               FontSize="11" Foreground="#8E8EAF" TextWrapping="Wrap"/>
+                    <TextBlock Text="• Novas conexões de outros computadores da rede serão rejeitadas." 
+                               FontSize="11" Foreground="#8E8EAF" TextWrapping="Wrap"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Ações -->
+            <Grid Grid.Row="1" ColumnDefinitions="*, *" ColumnSpacing="12" Margin="0,16,0,0">
+                <Button Grid.Column="0" Content="Manter Ativo" Click="OnCancelClick"
+                        Background="#1E1E2E" Foreground="#A0A0B8" BorderBrush="#2A2A3E" BorderThickness="1"
+                        CornerRadius="8" Padding="14,10" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Cursor="Hand"/>
+                <Button Grid.Column="1" Content="Desativar Servidor" Click="OnConfirmClick"
+                        Background="#EF4444" Foreground="#FFFFFF"
+                        CornerRadius="8" Padding="14,10" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontWeight="SemiBold" Cursor="Hand"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
