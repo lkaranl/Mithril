@@ -574,10 +574,10 @@
                                                    Foreground="#A0A0C5" LetterSpacing="1"/>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <RadioButton Content="🌐 Web"
-                                                         IsChecked="{Binding NewCredentialType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}"
+                                                         IsChecked="{Binding IsNewCredentialTypeWeb, Mode=TwoWay}"
                                                          Foreground="#B0B0D0" FontSize="12"/>
                                             <RadioButton Content="⚡ API"
-                                                         IsChecked="{Binding NewCredentialType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"
+                                                         IsChecked="{Binding IsNewCredentialTypeApi, Mode=TwoWay}"
                                                          Foreground="#B0B0D0" FontSize="12"/>
                                         </StackPanel>
                                     </StackPanel>
@@ -621,6 +621,7 @@
                                                      PlaceholderText="Senha ou Client Secret"/>
                                             <Button Grid.Column="1" Content="⚡ Gerar"
                                                     Command="{Binding GeneratePasswordCommand}"
+                                                    IsVisible="{Binding IsNewCredentialTypeWeb}"
                                                     Background="#1E1E38"
                                                     Foreground="#5B6EF5"
                                                     BorderBrush="#2A2A5A"

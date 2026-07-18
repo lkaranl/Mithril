@@ -545,6 +545,36 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private CredentialType _newCredentialType = CredentialType.Web;
 
+    public bool IsNewCredentialTypeWeb
+    {
+        get => NewCredentialType == CredentialType.Web;
+        set
+        {
+            if (value && NewCredentialType != CredentialType.Web)
+            {
+                NewCredentialType = CredentialType.Web;
+            }
+        }
+    }
+
+    public bool IsNewCredentialTypeApi
+    {
+        get => NewCredentialType == CredentialType.ApiToken;
+        set
+        {
+            if (value && NewCredentialType != CredentialType.ApiToken)
+            {
+                NewCredentialType = CredentialType.ApiToken;
+            }
+        }
+    }
+
+    partial void OnNewCredentialTypeChanged(CredentialType value)
+    {
+        OnPropertyChanged(nameof(IsNewCredentialTypeWeb));
+        OnPropertyChanged(nameof(IsNewCredentialTypeApi));
+    }
+
     [ObservableProperty]
     private string _newDomain = string.Empty;
 
