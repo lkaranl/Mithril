@@ -11,12 +11,14 @@ namespace Mithril.Infrastructure.Mcp;
 public class McpServerService
 {
     private readonly IMcpConsentService _consentService;
+    private readonly ITokenExchangeService _tokenExchangeService;
     private CancellationTokenSource? _cts;
     private Task? _listenTask;
 
-    public McpServerService(IMcpConsentService consentService)
+    public McpServerService(IMcpConsentService consentService, ITokenExchangeService tokenExchangeService)
     {
         _consentService = consentService;
+        _tokenExchangeService = tokenExchangeService;
     }
 
     public void Start()
@@ -142,7 +144,7 @@ public class McpServerService
             case "tools/list":
                 SendResponse(id, new
                 {
-                    tools = new[]
+                    tools = new object[]
                     {
                         new
                         {
@@ -160,6 +162,24 @@ public class McpServerService
                                     }
                                 },
                                 required = new[] { "domain" }
+                            }
+                        },
+                        new
+                        {
+                            name = "get_api_token",
+                            description = "Solicita a geração assíncrona de um token de acesso temporário (JWT) para uma API específica (ex: reciprocidade). Esta chamada exige consentimento do usuário na interface gráfica e usa as credenciais armazenadas sem revelá-las no chat da IA.",
+                            inputSchema = new
+                            {
+                                type = "object",
+                                properties = new
+                                {
+                                    api_name = new
+                                    {
+                                        type = "string",
+                                        description = "O nome da API para a qual o token JWT é solicitado (ex: reciprocidade)."
+                                    }
+                                },
+                                required = new[] { "api_name" }
                             }
                         }
                     }
@@ -229,6 +249,79 @@ public class McpServerService
                     {
                         LogToErrorStream($"Erro no fluxo de consentimento: {ex.Message}");
                         SendError(id, -32001, $"Erro interno ao solicitar consentimento: {ex.Message}");
+                    }
+                }
+                else if (toolName == "get_api_token")
+                {
+                    if (!paramsEl.TryGetProperty("arguments", out var argsEl) ||
+                        !argsEl.TryGetProperty("api_name", out var apiNameProp) ||
+                        apiNameProp.ValueKind != JsonValueKind.String)
+                    {
+                        SendError(id, -32602, "Argumento 'api_name' inválido ou ausente.");
+                        return;
+                    }
+
+                    var apiName = apiNameProp.GetString() ?? "";
+
+                    try
+                    {
+                        LogToErrorStream($"Aguardando consentimento para gerar JWT da API: {apiName}");
+                        
+                        ConsentResponse consent = await _consentService.RequestConsentAsync("Agente de IA", apiName);
+
+                        if (consent.Approved)
+                        {
+                            LogToErrorStream($"Acesso aprovado pelo usuário. Iniciando troca de token para API: {apiName}");
+                            
+                            if (string.IsNullOrEmpty(consent.TokenUrl) || string.IsNullOrEmpty(consent.Username) || string.IsNullOrEmpty(consent.Password))
+                            {
+                                SendResponse(id, new
+                                {
+                                    isError = true,
+                                    content = new[]
+                                    {
+                                        new { type = "text", text = "Erro: Configurações de API incompletas ou ausentes no cofre." }
+                                    }
+                                });
+                                return;
+                            }
+
+                            string jwtToken = await _tokenExchangeService.GetAccessTokenAsync(consent.TokenUrl, consent.Username, consent.Password);
+
+                            LogToErrorStream($"Token JWT obtido com sucesso para a API: {apiName}");
+                            SendResponse(id, new
+                            {
+                                content = new[]
+                                {
+                                    new
+                                    {
+                                        type = "text",
+                                        text = jwtToken
+                                    }
+                                }
+                            });
+                        }
+                        else
+                        {
+                            LogToErrorStream($"Geração de token rejeitada pelo usuário para a API: {apiName}");
+                            SendResponse(id, new
+                            {
+                                isError = true,
+                                content = new[]
+                                {
+                                    new
+                                    {
+                                        type = "text",
+                                        text = "Acesso negado pelo usuário. Não foi possível gerar o token JWT."
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogToErrorStream($"Erro no fluxo de geração de token: {ex.Message}");
+                        SendError(id, -32001, $"Erro ao obter token JWT: {ex.Message}");
                     }
                 }
                 else

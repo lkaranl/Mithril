@@ -9,6 +9,7 @@ using Mithril.Domain.Interfaces;
 using Mithril.Domain.Models;
 using Mithril.Infrastructure.Persistence;
 using Mithril.Infrastructure.Security;
+using Mithril.Infrastructure.Services;
 
 namespace Mithril.Tests;
 
@@ -116,5 +117,58 @@ public class MithrilTests
             if (Directory.Exists(tempDir))
                 Directory.Delete(tempDir, recursive: true);
         }
+    }
+
+    private class MockHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly HttpResponseMessage _response;
+
+        public MockHttpMessageHandler(HttpResponseMessage response)
+        {
+            _response = response;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_response);
+        }
+    }
+
+    [Fact]
+    public async Task GetAccessTokenAsync_With_ValidResponse_Should_Return_Token()
+    {
+        // Arrange
+        var mockResponse = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"access_token\":\"mocked-jwt-token-value\"}", Encoding.UTF8, "application/json")
+        };
+        var handler = new MockHttpMessageHandler(mockResponse);
+        using var client = new HttpClient(handler);
+        var service = new HttpTokenExchangeService(client);
+
+        // Act
+        string token = await service.GetAccessTokenAsync("https://dummy.api/token", "client_id", "client_secret");
+
+        // Assert
+        Assert.Equal("mocked-jwt-token-value", token);
+    }
+
+    [Fact]
+    public async Task GetAccessTokenAsync_With_HttpError_Should_Throw_SecurityException()
+    {
+        // Arrange
+        var mockResponse = new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("Erro de autenticação fake", Encoding.UTF8, "text/plain")
+        };
+        var handler = new MockHttpMessageHandler(mockResponse);
+        using var client = new HttpClient(handler);
+        var service = new HttpTokenExchangeService(client);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<SecurityException>(() => 
+            service.GetAccessTokenAsync("https://dummy.api/token", "client_id", "client_secret")
+        );
+        Assert.Contains("Erro de autenticação fake", ex.Message);
     }
 }

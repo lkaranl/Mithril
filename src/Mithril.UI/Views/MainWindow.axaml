@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Mithril.UI.ViewModels"
+        xmlns:dom="using:Mithril.Domain.Models"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="450"
@@ -102,11 +103,27 @@
             <Grid IsVisible="{Binding IsVaultOpen}" RowDefinitions="Auto, *, Auto" RowSpacing="16">
                 <!-- Cabeçalho da Lista e Ações rápidas -->
                 <Grid Grid.Row="0" ColumnDefinitions="*, Auto">
-                    <TextBlock Grid.Column="0" Text="Credenciais Cadastradas" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="0" Text="Credenciais &amp; APIs Cadastradas" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
                     
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                        <Button Content="+ Nova Credencial" 
+                                Command="{Binding ToggleAddFormCommand}"
+                                IsVisible="{Binding !IsAddFormOpen}"
+                                Background="#0EA5E9" 
+                                Foreground="#FFFFFF" 
+                                Padding="12,8"
+                                CornerRadius="4"
+                                FontSize="12"
+                                FontWeight="SemiBold">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="#0284C7"/>
+                                </Style>
+                            </Button.Styles>
+                        </Button>
                         <Button Content="Gerar Backup Físico" 
                                 Command="{Binding CreateBackupCommand}"
+                                IsVisible="{Binding !IsAddFormOpen}"
                                 Background="#2E2E38" 
                                 Foreground="#FFFFFF" 
                                 BorderBrush="#3E3E4A"
@@ -123,32 +140,61 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Tabela de Credenciais -->
-                <Border Grid.Row="1" Background="#1E1E24" BorderBrush="#2E2E38" BorderThickness="1" CornerRadius="8" Padding="12">
+                <!-- Área Central Dinâmica (Lista ou Formulário de Cadastro) -->
+                <!-- 1. Tabela de Credenciais (visível se formulário fechado) -->
+                <Border Grid.Row="1" IsVisible="{Binding !IsAddFormOpen}" Background="#1E1E24" BorderBrush="#2E2E38" BorderThickness="1" CornerRadius="8" Padding="12">
                     <ListBox ItemsSource="{Binding Credentials}" Background="Transparent">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Border BorderBrush="#2E2E38" BorderThickness="0,0,0,1" Padding="8,10">
                                     <Grid ColumnDefinitions="*, *, Auto">
-                                        <!-- Logo / Ícone de Domínio fictício -->
+                                        <!-- Logo / Ícone de Domínio (Web vs API) -->
                                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
-                                            <TextBlock Text="🌐" FontSize="20" VerticalAlignment="Center"/>
+                                            <!-- Ícone se for Web -->
+                                            <TextBlock Text="🌐" FontSize="20" VerticalAlignment="Center"
+                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}"/>
+                                            <!-- Ícone se for API -->
+                                            <TextBlock Text="🔑" FontSize="20" VerticalAlignment="Center"
+                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"/>
+                                            
                                             <StackPanel Spacing="2" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Domain}" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF"/>
-                                                <TextBlock Text="Domínio" FontSize="10" Foreground="#8E8E9F"/>
+                                                
+                                                <TextBlock Text="Domínio Web" FontSize="10" Foreground="#8E8E9F"
+                                                           IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}"/>
+                                                <TextBlock Text="Identificador de API" FontSize="10" Foreground="#8E8E9F"
+                                                           IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"/>
                                             </StackPanel>
                                         </StackPanel>
                                         
-                                        <!-- Usuário -->
+                                        <!-- Usuário / Client ID -->
                                         <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Username}" FontSize="13" Foreground="#FFFFFF"/>
-                                            <TextBlock Text="Usuário" FontSize="10" Foreground="#8E8E9F"/>
+                                            
+                                            <TextBlock Text="Usuário" FontSize="10" Foreground="#8E8E9F"
+                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}"/>
+                                            <TextBlock Text="Client ID" FontSize="10" Foreground="#8E8E9F"
+                                                       IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"/>
                                         </StackPanel>
 
-                                        <!-- Indicador Criptográfico -->
-                                        <Border Grid.Column="2" Background="#2A1B1B" BorderBrush="#EF4444" BorderThickness="1" CornerRadius="4" Padding="6,2">
-                                            <TextBlock Text="AES-256-GCM" FontSize="9" Foreground="#EF4444" FontWeight="Medium"/>
-                                        </Border>
+                                        <!-- Indicador Criptográfico e Ações -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                            <Border Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1" CornerRadius="4" Padding="6,2"
+                                                    IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}">
+                                                <TextBlock Text="OAUTH-JWT" FontSize="9" Foreground="#38BDF8" FontWeight="Medium"/>
+                                            </Border>
+                                            <Border Background="#2A1B1B" BorderBrush="#EF4444" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                                <TextBlock Text="AES-256-GCM" FontSize="9" Foreground="#EF4444" FontWeight="Medium"/>
+                                            </Border>
+                                            <Button Content="✏️" 
+                                                    Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).EditCredentialCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Padding="4"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip.Tip="Editar Credencial"/>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -156,11 +202,64 @@
                     </ListBox>
                 </Border>
 
+                <!-- 2. Formulário de Cadastro (visível se IsAddFormOpen = True) -->
+                <Border Grid.Row="1" IsVisible="{Binding IsAddFormOpen}" Background="#1E1E24" BorderBrush="#2E2E38" BorderThickness="1" CornerRadius="8" Padding="16">
+                    <ScrollViewer>
+                        <StackPanel Spacing="12">
+                            <!-- Título Dinâmico (Cadastro / Edição) -->
+                            <TextBlock Text="Cadastrar Credencial ou API" IsVisible="{Binding !IsEditing}" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                            <TextBlock Text="Editar Credencial ou API" IsVisible="{Binding IsEditing}" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                            
+                            <!-- Tipo de Credencial -->
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Tipo de Credencial:" FontSize="12" Foreground="#8E8E9F"/>
+                                <StackPanel Orientation="Horizontal" Spacing="20">
+                                    <RadioButton Content="Web (Login)" 
+                                                 IsChecked="{Binding NewCredentialType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.Web}}" 
+                                                 Foreground="#FFFFFF"/>
+                                    <RadioButton Content="API (Token JWT)" 
+                                                 IsChecked="{Binding NewCredentialType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}" 
+                                                 Foreground="#FFFFFF"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Campos -->
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
+                                <StackPanel Grid.Column="0" Spacing="6">
+                                    <TextBlock Text="Domínio / Identificador de API:" FontSize="12" Foreground="#8E8E9F"/>
+                                    <TextBox Text="{Binding NewDomain}" PlaceholderText="ex: github.com ou reciprocidade" Background="#111115" Foreground="#FFFFFF" BorderBrush="#3E3E4A" Padding="8"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="Usuário / Client ID:" FontSize="12" Foreground="#8E8E9F"/>
+                                    <TextBox Text="{Binding NewUsername}" PlaceholderText="ex: usuario ou client_id" Background="#111115" Foreground="#FFFFFF" BorderBrush="#3E3E4A" Padding="8"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
+                                <StackPanel Grid.Column="0" Spacing="6">
+                                    <TextBlock Text="Senha / Client Secret:" FontSize="12" Foreground="#8E8E9F"/>
+                                    <TextBox Text="{Binding NewPassword}" PlaceholderText="ex: senha ou secret" Background="#111115" Foreground="#FFFFFF" BorderBrush="#3E3E4A" Padding="8"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="6" IsEnabled="{Binding NewCredentialType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}">
+                                    <TextBlock Text="URL de Token da API (OAuth2):" FontSize="12" Foreground="#8E8E9F"/>
+                                    <TextBox Text="{Binding NewTokenUrl}" PlaceholderText="https://api.servidor.com/v1/token" Background="#111115" Foreground="#FFFFFF" BorderBrush="#3E3E4A" Padding="8"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Ações do Formulário -->
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="12" Margin="0,12,0,0">
+                                <Button Grid.Column="0" Content="Cancelar" Command="{Binding ToggleAddFormCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="#2E2E38" Foreground="#FFFFFF" BorderBrush="#3E3E4A" Padding="10" CornerRadius="4"/>
+                                <Button Grid.Column="1" Content="Salvar" Command="{Binding SaveNewCredentialCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="#0EA5E9" Foreground="#FFFFFF" Padding="10" CornerRadius="4" FontWeight="SemiBold"/>
+                            </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+
                 <!-- Informação Adicional do Servidor MCP -->
                 <Border Grid.Row="2" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="12">
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <TextBlock Text="🤖" FontSize="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="O Servidor MCP está escutando em segundo plano. Consultas de IA para 'github.com' irão disparar um pedido de consentimento." 
+                        <TextBlock Text="O Servidor MCP está escutando. Requisições do agente de IA para 'get_api_token(api_name)' trocarão segredos por JWTs de forma transparente." 
                                    FontSize="11" 
                                    Foreground="#94A3B8" 
                                    VerticalAlignment="Center"

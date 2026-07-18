@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -75,19 +76,35 @@ public partial class MainViewModel : ViewModelBase
                 // Carregar cofre existente
                 StatusMessage = "Carregando cofre...";
                 
-                // Lemos o salt do arquivo antes para derivar a chave
-                var tempVault = await _vaultRepository.LoadVaultAsync(_defaultVaultPath, new byte[32]); // Dummy key apenas para disparar leitura estrutural
-                byte[] salt = Convert.FromBase64String(tempVault.KeyDerivationSalt);
-                
-                // Derivar a chave real
-                byte[] derivedKey = _securityService.DeriveKey(MasterPassword, salt, tempVault.KeyDerivationIterations);
+                // Ler metadados de derivação diretamente do arquivo físico (campos públicos)
+                string vaultContent = await File.ReadAllTextAsync(_defaultVaultPath);
+                using var doc = JsonDocument.Parse(vaultContent);
+                var root = doc.RootElement;
 
-                // Agora carrega descriptografando o payload real
+                // Tenta extrair propriedades públicas (com suporte a variações de case JSON)
+                string saltBase64 = string.Empty;
+                if (root.TryGetProperty("KeyDerivationSalt", out var saltProp) || root.TryGetProperty("keyDerivationSalt", out saltProp))
+                {
+                    saltBase64 = saltProp.GetString() ?? string.Empty;
+                }
+
+                int iterations = 600000;
+                if (root.TryGetProperty("KeyDerivationIterations", out var iterProp) || root.TryGetProperty("keyDerivationIterations", out iterProp))
+                {
+                    iterations = iterProp.GetInt32();
+                }
+
+                byte[] salt = Convert.FromBase64String(saltBase64);
+                
+                // Derivar a chave real usando o salt e as iterações reais do arquivo
+                byte[] derivedKey = _securityService.DeriveKey(MasterPassword, salt, iterations);
+
+                // Agora carrega descriptografando o payload real com a chave correta
                 _currentVault = await _vaultRepository.LoadVaultAsync(_defaultVaultPath, derivedKey);
                 _currentVaultKey = derivedKey;
                 
                 IsVaultOpen = true;
-                StatusMessage = $"Cofre aberto. { _currentVault.Credentials.Count } credenciais carregadas.";
+                StatusMessage = $"Cofre aberto. {_currentVault.Credentials.Count} credenciais carregadas.";
                 LoadCredentialsList();
             }
             else
@@ -106,16 +123,31 @@ public partial class MainViewModel : ViewModelBase
 
                 byte[] derivedKey = _securityService.DeriveKey(MasterPassword, salt, newVault.KeyDerivationIterations);
 
-                // Adicionar credenciais iniciais de demonstração
+                // Adicionar credenciais iniciais de demonstração (Web)
                 string plainPassword = "super_secret_mcp_password_2026";
                 byte[] encryptedPassBytes = _securityService.Encrypt(System.Text.Encoding.UTF8.GetBytes(plainPassword), derivedKey);
                 string encryptedPassBase64 = Convert.ToBase64String(encryptedPassBytes);
 
                 newVault.Credentials.Add(new Credential
                 {
+                    Type = CredentialType.Web,
                     Domain = "github.com",
                     Username = "dev_ai",
                     EncryptedPassword = encryptedPassBase64
+                });
+
+                // Adicionar credenciais iniciais de demonstração (API de Reciprocidade)
+                string mockSecret = "client_secret_super_secret_reciprocidade_key";
+                byte[] encryptedSecretBytes = _securityService.Encrypt(System.Text.Encoding.UTF8.GetBytes(mockSecret), derivedKey);
+                string encryptedSecretBase64 = Convert.ToBase64String(encryptedSecretBytes);
+
+                newVault.Credentials.Add(new Credential
+                {
+                    Type = CredentialType.ApiToken,
+                    Domain = "reciprocidade",
+                    Username = "client_id_reciprocidade",
+                    EncryptedPassword = encryptedSecretBase64,
+                    TokenUrl = "https://api.reciprocidade.com.br/v1/auth/token"
                 });
 
                 await _vaultRepository.SaveVaultAsync(_defaultVaultPath, newVault, derivedKey);
@@ -123,7 +155,7 @@ public partial class MainViewModel : ViewModelBase
                 _currentVault = newVault;
                 _currentVaultKey = derivedKey;
                 IsVaultOpen = true;
-                StatusMessage = "Novo cofre criado com credencial de teste para 'github.com'.";
+                StatusMessage = "Novo cofre criado com credenciais de teste para 'github.com' (Web) e 'reciprocidade' (API).";
                 LoadCredentialsList();
             }
         }
@@ -237,7 +269,8 @@ public partial class MainViewModel : ViewModelBase
                         {
                             Approved = true,
                             Username = targetCredential.Username,
-                            Password = plainPassword
+                            Password = plainPassword,
+                            TokenUrl = targetCredential.TokenUrl
                         });
                     }
                     catch (Exception ex)
@@ -258,5 +291,167 @@ public partial class MainViewModel : ViewModelBase
         });
 
         return await tcs.Task;
+    }
+
+    // --- PROPRIEDADES E COMANDOS DE CADASTRO E EDIÇÃO DE CREDENCIAIS ---
+
+    private Guid? _editingCredentialId;
+
+    [ObservableProperty]
+    private bool _isEditing;
+
+    [ObservableProperty]
+    private bool _isAddFormOpen;
+
+    [ObservableProperty]
+    private CredentialType _newCredentialType = CredentialType.Web;
+
+    [ObservableProperty]
+    private string _newDomain = string.Empty;
+
+    [ObservableProperty]
+    private string _newUsername = string.Empty;
+
+    [ObservableProperty]
+    private string _newPassword = string.Empty;
+
+    [ObservableProperty]
+    private string _newTokenUrl = string.Empty;
+
+    [RelayCommand]
+    private void ToggleAddForm()
+    {
+        IsAddFormOpen = !IsAddFormOpen;
+        if (IsAddFormOpen)
+        {
+            // Limpar formulário para novo cadastro
+            NewDomain = string.Empty;
+            NewUsername = string.Empty;
+            NewPassword = string.Empty;
+            NewTokenUrl = string.Empty;
+            NewCredentialType = CredentialType.Web;
+            IsEditing = false;
+            _editingCredentialId = null;
+        }
+    }
+
+    [RelayCommand]
+    private void EditCredential(Credential credential)
+    {
+        if (credential == null || _currentVaultKey == null) return;
+
+        try
+        {
+            // Descriptografar a senha/secret para preencher no formulário
+            byte[] encryptedBytes = Convert.FromBase64String(credential.EncryptedPassword);
+            byte[] decryptedBytes = _securityService.Decrypt(encryptedBytes, _currentVaultKey);
+            string plainPassword = System.Text.Encoding.UTF8.GetString(decryptedBytes);
+
+            // Carrega no formulário
+            NewDomain = credential.Domain;
+            NewUsername = credential.Username;
+            NewTokenUrl = credential.TokenUrl;
+            NewCredentialType = credential.Type;
+            NewPassword = plainPassword;
+
+            _editingCredentialId = credential.Id;
+            IsEditing = true;
+            IsAddFormOpen = true; // Abre o painel/formulário
+            StatusMessage = $"Editando credencial para '{credential.Domain}'...";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Falha ao descriptografar credencial para edição: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveNewCredentialAsync()
+    {
+        if (string.IsNullOrWhiteSpace(NewDomain) || string.IsNullOrWhiteSpace(NewUsername) || string.IsNullOrWhiteSpace(NewPassword))
+        {
+            StatusMessage = "Os campos Domínio/API, Usuário/Client ID e Senha/Client Secret são obrigatórios.";
+            return;
+        }
+
+        if (NewCredentialType == CredentialType.ApiToken && string.IsNullOrWhiteSpace(NewTokenUrl))
+        {
+            StatusMessage = "A URL de Token da API é obrigatória para credenciais de API.";
+            return;
+        }
+
+        if (_currentVault == null || _currentVaultKey == null)
+        {
+            StatusMessage = "O cofre precisa estar aberto para salvar uma credencial.";
+            return;
+        }
+
+        try
+        {
+            StatusMessage = "Criptografando e salvando alterações...";
+
+            // Criptografar a nova senha/secret
+            byte[] encryptedBytes = _securityService.Encrypt(System.Text.Encoding.UTF8.GetBytes(NewPassword), _currentVaultKey);
+            string encryptedBase64 = Convert.ToBase64String(encryptedBytes);
+
+            if (IsEditing && _editingCredentialId.HasValue)
+            {
+                // Localizar e atualizar a credencial existente
+                Credential? target = null;
+                foreach (var c in _currentVault.Credentials)
+                {
+                    if (c.Id == _editingCredentialId.Value)
+                    {
+                        target = c;
+                        break;
+                    }
+                }
+
+                if (target != null)
+                {
+                    target.Type = NewCredentialType;
+                    target.Domain = NewDomain.Trim();
+                    target.Username = NewUsername.Trim();
+                    target.EncryptedPassword = encryptedBase64;
+                    target.TokenUrl = NewCredentialType == CredentialType.ApiToken ? NewTokenUrl.Trim() : string.Empty;
+                    target.LastModifiedAt = DateTime.UtcNow;
+
+                    StatusMessage = $"Credencial para '{target.Domain}' editada com sucesso!";
+                }
+                else
+                {
+                    StatusMessage = "Credencial original não encontrada no cofre.";
+                }
+            }
+            else
+            {
+                // Criar nova credencial
+                var newCred = new Credential
+                {
+                    Type = NewCredentialType,
+                    Domain = NewDomain.Trim(),
+                    Username = NewUsername.Trim(),
+                    EncryptedPassword = encryptedBase64,
+                    TokenUrl = NewCredentialType == CredentialType.ApiToken ? NewTokenUrl.Trim() : string.Empty
+                };
+
+                _currentVault.Credentials.Add(newCred);
+                StatusMessage = $"Nova credencial para '{newCred.Domain}' adicionada com sucesso!";
+            }
+
+            // Persistir no arquivo físico
+            await _vaultRepository.SaveVaultAsync(_defaultVaultPath, _currentVault, _currentVaultKey);
+
+            IsAddFormOpen = false;
+            IsEditing = false;
+            _editingCredentialId = null;
+
+            // Recarregar a lista
+            LoadCredentialsList();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Erro ao salvar alterações no cofre: {ex.Message}";
+        }
     }
 }
