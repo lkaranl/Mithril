@@ -703,6 +703,58 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
+    private async Task DeleteCredentialAsync(Credential credential)
+    {
+        if (credential == null || _currentVault == null || _currentVaultKey == null) return;
+
+        try
+        {
+            string identifier = credential.Type == CredentialType.ApiToken ? credential.Username : credential.Domain;
+            bool confirmed = false;
+
+            var desktop = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+            if (desktop?.MainWindow != null)
+            {
+                var dialog = new DeleteConfirmWindow(identifier);
+                confirmed = await dialog.ShowDialog<bool>(desktop.MainWindow);
+            }
+
+            if (confirmed)
+            {
+                Credential? target = null;
+                foreach (var c in _currentVault.Credentials)
+                {
+                    if (c.Id == credential.Id)
+                    {
+                        target = c;
+                        break;
+                    }
+                }
+
+                if (target != null)
+                {
+                    _currentVault.Credentials.Remove(target);
+                    await _vaultRepository.SaveVaultAsync(_defaultVaultPath, _currentVault, _currentVaultKey);
+                    
+                    StatusMessage = $"Credencial para '{identifier}' excluída com sucesso.";
+                    ShowNotification($"Credencial para '{identifier}' excluída com sucesso.", "Success");
+                    
+                    LoadCredentialsList();
+                }
+                else
+                {
+                    ShowNotification("Erro: Credencial não encontrada para exclusão.", "Error");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Erro ao excluir credencial: {ex.Message}";
+            ShowNotification($"Erro ao excluir: {ex.Message}", "Error");
+        }
+    }
+
     private static string GenerateStrongPassword(int length = 16)
     {
         const string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

@@ -56,6 +56,11 @@
         <Style Selector="Button.secondary:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="#2A2A3E"/>
             <Setter Property="BorderBrush" Value="#4A4A6A"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+        <Style Selector="Button.secondary:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#181824"/>
+            <Setter Property="Foreground" Value="#E0E0E0"/>
         </Style>
 
         <!-- Estilo de botão ícone (com hover de alto contraste) -->
@@ -508,6 +513,13 @@
                                                                 Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).EditCredentialCommand}"
                                                                 CommandParameter="{Binding}">
                                                             <TextBlock Text="✏" FontSize="13" Foreground="#8E8EAF"/>
+                                                        </Button>
+                                                        <!-- Excluir -->
+                                                        <Button Classes="icon-btn"
+                                                                ToolTip.Tip="Excluir Credencial"
+                                                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).DeleteCredentialCommand}"
+                                                                CommandParameter="{Binding}">
+                                                            <TextBlock Text="🗑️" FontSize="13" Foreground="#EF4444"/>
                                                         </Button>
                                                     </StackPanel>
                                                 </Grid>

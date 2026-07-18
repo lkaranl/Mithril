@@ -1,0 +1,58 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Mithril.UI.Views.DeleteConfirmWindow"
+        Title="Confirmar Exclusão"
+        Width="420" Height="220"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#0D0D12">
+
+    <Border BorderBrush="#1E1E2E" BorderThickness="1" Padding="24" CornerRadius="12">
+        <Grid RowDefinitions="*, Auto">
+            <!-- Conteúdo -->
+            <StackPanel Grid.Row="0" Spacing="14">
+                <!-- Ícone de Alerta Excluir -->
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Border Background="#2A1015" BorderBrush="#EF4444" BorderThickness="1" CornerRadius="8" Width="36" Height="36">
+                        <TextBlock Text="🗑️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Excluir Credencial?" FontSize="16" FontWeight="Bold" Foreground="#E8E8F8" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Descrição e domínio -->
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Tem certeza que deseja excluir esta credencial permanentemente?" 
+                               FontSize="12" Foreground="#A0A0C0" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                        <TextBlock Text="Identificador:" FontSize="11" Foreground="#8E8EAF"/>
+                        <TextBlock x:Name="TxtIdentifier" Text="github.com" FontSize="11" Foreground="#EF4444" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Ações -->
+            <Grid Grid.Row="1" ColumnDefinitions="*, *" ColumnSpacing="12" Margin="0,16,0,0">
+                <Button Grid.Column="0" Content="Cancelar" Click="OnCancelClick"
+                        Background="#1E1E2E" Foreground="#C5C5D8" BorderBrush="#32324D" BorderThickness="1"
+                        CornerRadius="8" Padding="14,10" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Cursor="Hand">
+                    <Button.Styles>
+                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                            <Setter Property="Background" Value="#2A2A3E"/>
+                            <Setter Property="BorderBrush" Value="#4A4A6A"/>
+                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                        </Style>
+                    </Button.Styles>
+                </Button>
+                <Button Grid.Column="1" Content="Excluir" Click="OnConfirmClick"
+                        Background="#EF4444" Foreground="#FFFFFF"
+                        CornerRadius="8" Padding="14,10" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" FontWeight="SemiBold" Cursor="Hand">
+                    <Button.Styles>
+                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                            <Setter Property="Background" Value="#DC2626"/>
+                        </Style>
+                    </Button.Styles>
+                </Button>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
