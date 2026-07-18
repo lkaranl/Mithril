@@ -566,6 +566,13 @@
                                                                 IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}">
                                                             <TextBlock Text="⚡📋" FontSize="12" Foreground="#5B6EF5"/>
                                                         </Button>
+                                                        <!-- Clonar -->
+                                                        <Button Classes="icon-btn"
+                                                                ToolTip.Tip="Clonar Credencial"
+                                                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).CloneCredentialCommand}"
+                                                                CommandParameter="{Binding}">
+                                                            <TextBlock Text="📑" FontSize="13" Foreground="#8E8EAF"/>
+                                                        </Button>
                                                         <!-- Editar -->
                                                         <Button Classes="icon-btn"
                                                                 ToolTip.Tip="Editar"

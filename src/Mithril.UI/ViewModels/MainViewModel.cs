@@ -640,6 +640,37 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void CloneCredential(Credential credential)
+    {
+        if (credential == null || _currentVaultKey == null) return;
+
+        try
+        {
+            byte[] encryptedBytes = Convert.FromBase64String(credential.EncryptedPassword);
+            byte[] decryptedBytes = _securityService.Decrypt(encryptedBytes, _currentVaultKey);
+            string plainPassword = System.Text.Encoding.UTF8.GetString(decryptedBytes);
+
+            NewDomain = credential.Domain;
+            NewUsername = credential.Username;
+            NewTokenUrl = credential.TokenUrl;
+            NewCredentialType = credential.Type;
+            NewPassword = plainPassword;
+            NewCategory = string.IsNullOrEmpty(credential.Category) ? "Geral" : credential.Category;
+
+            _editingCredentialId = null;
+            IsEditing = false;
+            IsAddFormOpen = true;
+            StatusMessage = $"Clonando credencial de '{credential.Domain}'...";
+            ShowNotification($"Clonando credencial de '{credential.Domain}'. Altere as informações desejadas e salve.", "Info");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Falha ao descriptografar credencial para clonagem: {ex.Message}";
+            ShowNotification($"Erro ao clonar: {ex.Message}", "Error");
+        }
+    }
+
+    [RelayCommand]
     private async Task SaveNewCredentialAsync()
     {
         if (string.IsNullOrWhiteSpace(NewDomain) || string.IsNullOrWhiteSpace(NewUsername) || string.IsNullOrWhiteSpace(NewPassword))
