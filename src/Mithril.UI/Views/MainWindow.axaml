@@ -154,6 +154,61 @@
         <Style Selector="ListBox.main-list ListBoxItem:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
+
+        <!-- Badges Temáticos de Categorias (Cores baseadas em Tag) -->
+        <Style Selector="Border.category-badge">
+            <Setter Property="Background" Value="#1E1E38"/>
+            <Setter Property="BorderBrush" Value="#32324D"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Border.category-badge TextBlock">
+            <Setter Property="Foreground" Value="#A0A0C5"/>
+        </Style>
+
+        <!-- Produção (Vermelho) -->
+        <Style Selector="Border.category-badge[Tag=Produção]">
+            <Setter Property="Background" Value="#2A1015"/>
+            <Setter Property="BorderBrush" Value="#EF4444"/>
+        </Style>
+        <Style Selector="Border.category-badge[Tag=Produção] TextBlock">
+            <Setter Property="Foreground" Value="#EF4444"/>
+        </Style>
+
+        <!-- Homologação (Laranja) -->
+        <Style Selector="Border.category-badge[Tag=Homologação]">
+            <Setter Property="Background" Value="#2D1F10"/>
+            <Setter Property="BorderBrush" Value="#F59E0B"/>
+        </Style>
+        <Style Selector="Border.category-badge[Tag=Homologação] TextBlock">
+            <Setter Property="Foreground" Value="#F59E0B"/>
+        </Style>
+
+        <!-- Trabalho (Azul) -->
+        <Style Selector="Border.category-badge[Tag=Trabalho]">
+            <Setter Property="Background" Value="#0E1E38"/>
+            <Setter Property="BorderBrush" Value="#3B82F6"/>
+        </Style>
+        <Style Selector="Border.category-badge[Tag=Trabalho] TextBlock">
+            <Setter Property="Foreground" Value="#3B82F6"/>
+        </Style>
+
+        <!-- Pessoal (Roxo) -->
+        <Style Selector="Border.category-badge[Tag=Pessoal]">
+            <Setter Property="Background" Value="#221035"/>
+            <Setter Property="BorderBrush" Value="#A855F7"/>
+        </Style>
+        <Style Selector="Border.category-badge[Tag=Pessoal] TextBlock">
+            <Setter Property="Foreground" Value="#A855F7"/>
+        </Style>
+
+        <!-- Teste (Amarelo) -->
+        <Style Selector="Border.category-badge[Tag=Teste]">
+            <Setter Property="Background" Value="#282A10"/>
+            <Setter Property="BorderBrush" Value="#EAB308"/>
+        </Style>
+        <Style Selector="Border.category-badge[Tag=Teste] TextBlock">
+            <Setter Property="Foreground" Value="#EAB308"/>
+        </Style>
     </Window.Styles>
 
     <Grid RowDefinitions="Auto, *, Auto">
@@ -457,8 +512,8 @@
                                                                        IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static dom:CredentialType.ApiToken}}"/>
                                                             
                                                             <!-- Badge de Categoria -->
-                                                            <Border CornerRadius="6" Padding="6,2" Background="#1E1E38">
-                                                                <TextBlock Text="{Binding Category}" FontSize="9" Foreground="#A0A0C5" FontWeight="SemiBold"/>
+                                                            <Border Classes="category-badge" CornerRadius="6" Padding="6,2" Tag="{Binding Category}">
+                                                                <TextBlock Text="{Binding Category}" FontSize="9" FontWeight="SemiBold"/>
                                                             </Border>
                                                         </StackPanel>
 
