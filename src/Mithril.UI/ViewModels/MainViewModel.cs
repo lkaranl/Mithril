@@ -56,10 +56,10 @@ public partial class MainViewModel : ViewModelBase
     private ObservableCollection<Credential> _filteredCredentials = new();
 
     [ObservableProperty]
-    private ObservableCollection<string> _categories = new() { "Geral", "Trabalho", "Pessoal", "Produção", "Homologação" };
+    private ObservableCollection<string> _categories = new() { "Geral", "Trabalho", "Pessoal", "Produção", "Homologação", "Teste" };
 
     [ObservableProperty]
-    private ObservableCollection<string> _filterCategories = new() { "Todos", "Geral", "Trabalho", "Pessoal", "Produção", "Homologação" };
+    private ObservableCollection<string> _filterCategories = new() { "Todos", "Geral", "Trabalho", "Pessoal", "Produção", "Homologação", "Teste" };
 
     [ObservableProperty]
     private string _searchText = string.Empty;
