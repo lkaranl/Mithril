@@ -14,6 +14,15 @@
         Background="#0D0D12"
         WindowStartupLocation="CenterScreen">
 
+    <Window.Resources>
+        <!-- Força o TextBox a manter cores escuras e de alto contraste sob foco e hover no Windows -->
+        <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#17172A"/>
+        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#17172A"/>
+        <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#F0F0FA"/>
+        <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#5B6EF5"/>
+        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#4A5DE4"/>
+    </Window.Resources>
+
     <Window.Styles>
         <!-- Estilo global de botão primário -->
         <Style Selector="Button.primary">
