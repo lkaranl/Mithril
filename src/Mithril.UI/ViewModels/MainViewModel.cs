@@ -420,10 +420,24 @@ public partial class MainViewModel : ViewModelBase
             var storageProvider = TopLevel.GetTopLevel(desktop.MainWindow)?.StorageProvider;
             if (storageProvider == null) return;
 
+            IStorageFolder? suggestedFolder = null;
+            try
+            {
+                if (Directory.Exists(_defaultBackupDirectory))
+                {
+                    suggestedFolder = await storageProvider.TryGetFolderFromPathAsync(new Uri(_defaultBackupDirectory));
+                }
+            }
+            catch
+            {
+                // Ignora se não conseguir obter a pasta sugerida
+            }
+
             var options = new FilePickerOpenOptions
             {
                 Title = "Selecionar Arquivo de Backup do Mithril",
                 AllowMultiple = false,
+                SuggestedStartLocation = suggestedFolder,
                 FileTypeFilter = new[]
                 {
                     new FilePickerFileType("Backups do Mithril") { Patterns = new[] { "*.json", "*_backup*" } }
