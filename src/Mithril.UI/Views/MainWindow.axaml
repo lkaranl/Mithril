@@ -117,7 +117,31 @@
             <Setter Property="Foreground" Value="#FFFFFF"/>
         </Style>
 
-        <!-- ListBox de Categorias no Topo (Tags horizontais estilo pílulas) -->
+        <!-- ToggleSwitch: Contraste corrigido para fundo escuro -->
+        <!-- Off: Track cinza-violeta médio (#4A4A6A) → contraste ~3.5:1 contra fundo #0D0D12 -->
+        <!-- On:  Track azul-índigo (#5B6EF5) → coherente com a paleta primária do projeto -->
+        <Style Selector="ToggleSwitch /template/ Border#SwitchKnobBounds">
+            <Setter Property="Background" Value="#4A4A6A"/>
+            <Setter Property="CornerRadius" Value="10"/>
+        </Style>
+        <Style Selector="ToggleSwitch:checked /template/ Border#SwitchKnobBounds">
+            <Setter Property="Background" Value="#5B6EF5"/>
+        </Style>
+        <Style Selector="ToggleSwitch:pointerover /template/ Border#SwitchKnobBounds">
+            <Setter Property="Background" Value="#5A5A80"/>
+        </Style>
+        <Style Selector="ToggleSwitch:checked:pointerover /template/ Border#SwitchKnobBounds">
+            <Setter Property="Background" Value="#4A5DE4"/>
+        </Style>
+        <!-- Knob: branco-lavanda no Off, branco puro no On -->
+        <Style Selector="ToggleSwitch /template/ Ellipse#SwitchKnob">
+            <Setter Property="Fill" Value="#D0D0E8"/>
+        </Style>
+        <Style Selector="ToggleSwitch:checked /template/ Ellipse#SwitchKnob">
+            <Setter Property="Fill" Value="#FFFFFF"/>
+        </Style>
+
+
         <Style Selector="ListBox.category-tags">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
