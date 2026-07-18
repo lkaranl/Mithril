@@ -376,17 +376,20 @@ public partial class MainViewModel : ViewModelBase
                 Directory.CreateDirectory(_defaultBackupDirectory);
             }
 
+            // Envolver em aspas duplas para evitar quebras em caminhos com espaços
+            string escapedPath = $"\"{_defaultBackupDirectory}\"";
+
             if (OperatingSystem.IsWindows())
             {
-                System.Diagnostics.Process.Start("explorer.exe", _defaultBackupDirectory);
+                System.Diagnostics.Process.Start("explorer.exe", escapedPath);
             }
             else if (OperatingSystem.IsMacOS())
             {
-                System.Diagnostics.Process.Start("open", _defaultBackupDirectory);
+                System.Diagnostics.Process.Start("open", escapedPath);
             }
             else if (OperatingSystem.IsLinux())
             {
-                System.Diagnostics.Process.Start("xdg-open", _defaultBackupDirectory);
+                System.Diagnostics.Process.Start("xdg-open", escapedPath);
             }
             else
             {
