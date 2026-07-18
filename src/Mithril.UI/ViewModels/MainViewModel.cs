@@ -79,6 +79,18 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isConsentRequired = true;
 
+    [ObservableProperty]
+    private Credential? _selectedCredentialForDetails;
+
+    [ObservableProperty]
+    private bool _isDetailsPanelOpen;
+
+    [ObservableProperty]
+    private string _decryptedPasswordForDetails = string.Empty;
+
+    [ObservableProperty]
+    private bool _isPasswordDetailsVisible;
+
     public MainViewModel(
         ISecurityService securityService,
         IVaultRepository vaultRepository,
@@ -643,6 +655,7 @@ public partial class MainViewModel : ViewModelBase
     private void EditCredential(Credential credential)
     {
         if (credential == null || _currentVaultKey == null) return;
+        IsDetailsPanelOpen = false; // Fechar detalhes se aberto
 
         try
         {
@@ -681,6 +694,7 @@ public partial class MainViewModel : ViewModelBase
             byte[] decryptedBytes = _securityService.Decrypt(encryptedBytes, _currentVaultKey);
             string plainPassword = System.Text.Encoding.UTF8.GetString(decryptedBytes);
 
+            // Carrega no formulário
             NewDomain = credential.Domain;
             NewUsername = credential.Username;
             NewTokenUrl = credential.TokenUrl;
@@ -688,18 +702,62 @@ public partial class MainViewModel : ViewModelBase
             NewPassword = plainPassword;
             NewCategory = string.IsNullOrEmpty(credential.Category) ? "Geral" : credential.Category;
 
-            _editingCredentialId = null;
             IsEditing = false;
-            IsAddFormOpen = true;
+            _editingCredentialId = null;
+            IsAddFormOpen = true; // Abre o painel/formulário
             StatusMessage = $"Clonando credencial de '{credential.Domain}'...";
-            ShowNotification($"Clonando credencial de '{credential.Domain}'. Altere as informações desejadas e salve.", "Info");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Falha ao descriptografar credencial para clonagem: {ex.Message}";
-            ShowNotification($"Erro ao clonar: {ex.Message}", "Error");
+            StatusMessage = $"Falha ao clonar credencial: {ex.Message}";
         }
     }
+
+    [RelayCommand]
+    private void ShowDetails(Credential credential)
+    {
+        if (credential == null) return;
+        SelectedCredentialForDetails = credential;
+        DecryptedPasswordForDetails = string.Empty;
+        IsPasswordDetailsVisible = false;
+        IsDetailsPanelOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseDetails()
+    {
+        IsDetailsPanelOpen = false;
+        SelectedCredentialForDetails = null;
+        DecryptedPasswordForDetails = string.Empty;
+        IsPasswordDetailsVisible = false;
+    }
+
+    [RelayCommand]
+    private void TogglePasswordDetailsVisibility()
+    {
+        if (SelectedCredentialForDetails == null || _currentVaultKey == null) return;
+        
+        if (IsPasswordDetailsVisible)
+        {
+            DecryptedPasswordForDetails = string.Empty;
+            IsPasswordDetailsVisible = false;
+        }
+        else
+        {
+            try
+            {
+                byte[] encryptedBytes = Convert.FromBase64String(SelectedCredentialForDetails.EncryptedPassword);
+                byte[] decryptedBytes = _securityService.Decrypt(encryptedBytes, _currentVaultKey);
+                DecryptedPasswordForDetails = System.Text.Encoding.UTF8.GetString(decryptedBytes);
+                IsPasswordDetailsVisible = true;
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Erro ao descriptografar: {ex.Message}";
+            }
+        }
+    }
+
 
     [RelayCommand]
     private async Task SaveNewCredentialAsync()
@@ -866,6 +924,7 @@ public partial class MainViewModel : ViewModelBase
     private async Task DeleteCredentialAsync(Credential credential)
     {
         if (credential == null || _currentVault == null || _currentVaultKey == null) return;
+        IsDetailsPanelOpen = false; // Fechar detalhes se aberto
 
         try
         {

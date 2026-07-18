@@ -19,4 +19,7 @@ public class Credential
     public string Category { get; set; } = "Geral"; // Categoria da credencial (ex: "Trabalho", "Pessoal")
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime LastModifiedAt { get; set; } = DateTime.UtcNow;
+
+    public string DisplayName => Type == CredentialType.ApiToken ? Username : Domain;
+    public string Initial => string.IsNullOrEmpty(DisplayName) ? "?" : DisplayName.Substring(0, 1).ToUpper();
 }
