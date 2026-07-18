@@ -263,10 +263,21 @@
                 </Border>
 
                 <!-- Switch do Servidor de Rede (SSE) -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,0"
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="0,0,16,0"
                             IsVisible="{Binding IsVaultOpen}">
-                    <TextBlock Text="Servidor de Rede" FontSize="11" Foreground="#8E8EAF" VerticalAlignment="Center"/>
-                    <ToggleSwitch IsChecked="{Binding IsSseServerActive}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                    <!-- Toggle: Servidor de Rede -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="Servidor de Rede" FontSize="11" Foreground="#8E8EAF" VerticalAlignment="Center"/>
+                        <ToggleSwitch IsChecked="{Binding IsSseServerActive}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <!-- Separador vertical -->
+                    <Border Width="1" Height="16" Background="#2A2A45" VerticalAlignment="Center"/>
+                    <!-- Toggle: Consentimento MCP -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                                ToolTip.Tip="Quando ativado, exibe um diálogo de confirmação a cada solicitação do MCP. Desative para aprovação silenciosa automática.">
+                        <TextBlock Text="Consentimento MCP" FontSize="11" Foreground="#8E8EAF" VerticalAlignment="Center"/>
+                        <ToggleSwitch IsChecked="{Binding IsConsentRequired}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center"/>
+                    </StackPanel>
                 </StackPanel>
 
                 <!-- Contador de credenciais -->

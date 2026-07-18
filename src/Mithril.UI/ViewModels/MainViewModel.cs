@@ -72,6 +72,13 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSseServerActive;
 
+    /// <summary>
+    /// Quando verdadeiro (padrão), exibe o modal de consentimento a cada solicitação MCP.
+    /// Quando falso, aprova automaticamente sem interação do usuário.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isConsentRequired = true;
+
     public MainViewModel(
         ISecurityService securityService,
         IVaultRepository vaultRepository,
@@ -469,6 +476,30 @@ public partial class MainViewModel : ViewModelBase
         {
             StatusMessage = $"Solicitação MCP para '{domain}' negada: Domínio não encontrado.";
             return new ConsentResponse { Approved = false };
+        }
+
+        // Se o consentimento automático estiver ativo, aprovar sem abrir o modal
+        if (!IsConsentRequired)
+        {
+            try
+            {
+                byte[] encryptedBytes = Convert.FromBase64String(targetCredential.EncryptedPassword);
+                byte[] decryptedBytes = _securityService.Decrypt(encryptedBytes, _currentVaultKey);
+                string plainPassword = System.Text.Encoding.UTF8.GetString(decryptedBytes);
+                StatusMessage = $"MCP: acesso automático concedido para '{domain}' (consentimento desativado).";
+                return new ConsentResponse
+                {
+                    Approved = true,
+                    Username = targetCredential.Username,
+                    Password = plainPassword,
+                    TokenUrl = targetCredential.TokenUrl
+                };
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Falha ao descriptografar credencial via MCP: {ex.Message}";
+                return new ConsentResponse { Approved = false };
+            }
         }
 
         // Abrir o diálogo na UI do Avalonia
