@@ -1,0 +1,99 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:Mithril.UI.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+        Width="400" Height="300"
+        x:Class="Mithril.UI.Views.McpConsentWindow"
+        x:DataType="vm:McpConsentViewModel"
+        Title="Solicitação de Consentimento MCP"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="#1E1E24">
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="24">
+        <!-- Cabeçalho com Estilo Moderno -->
+        <StackPanel Grid.Row="0" Spacing="8">
+            <TextBlock Text="🛡️ Solicitação de Acesso"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       Foreground="#FFFFFF" />
+            <TextBlock Text="Um cliente MCP está solicitando credenciais."
+                       FontSize="12"
+                       Foreground="#8E8E9F" />
+            <Separator Height="1" Background="#2E2E38" Margin="0,8,0,0"/>
+        </StackPanel>
+
+        <!-- Conteúdo Principal -->
+        <StackPanel Grid.Row="1" Spacing="16" VerticalAlignment="Center">
+            <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto" Margin="0,10">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Requisitante: " FontWeight="Medium" Foreground="#A9A9B3" Margin="0,0,10,6"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Requester}" Foreground="#FFFFFF" FontWeight="Bold"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Domínio: " FontWeight="Medium" Foreground="#A9A9B3"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Domain}" Foreground="#38BDF8" FontWeight="Bold"/>
+            </Grid>
+
+            <!-- Se exigir Senha Mestre para destravar -->
+            <StackPanel Spacing="8" IsVisible="{Binding IsMasterPasswordRequired}">
+                <TextBlock Text="Confirme sua Senha Mestre para autorizar:"
+                           FontSize="12"
+                           Foreground="#EF4444" />
+                <TextBox PasswordChar="*"
+                         Text="{Binding MasterPasswordInput}"
+                         PlaceholderText="Senha Mestre"
+                         Background="#2E2E38"
+                         Foreground="#FFFFFF"
+                         BorderBrush="#3E3E4A"
+                         Padding="10,8"/>
+            </StackPanel>
+
+            <!-- Mensagem de Erro se houver -->
+            <TextBlock Text="{Binding ErrorMessage}"
+                       Foreground="#EF4444"
+                       FontSize="12"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <!-- Ações (Aprovar / Recusar) -->
+        <Grid Grid.Row="2" ColumnDefinitions="*, *" ColumnSpacing="16" Margin="0,16,0,0">
+            <Button Grid.Column="0"
+                    Content="Recusar"
+                    Command="{Binding DenyCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Background="#2E2E38"
+                    Foreground="#FFFFFF"
+                    BorderBrush="#3E3E4A"
+                    BorderThickness="1"
+                    Padding="0,12"
+                    CornerRadius="6">
+                <Button.Styles>
+                    <Style Selector="Button:pointerover /template/ ContentPresenter">
+                        <Setter Property="Background" Value="#3E3E4A"/>
+                    </Style>
+                </Button.Styles>
+            </Button>
+
+            <Button Grid.Column="1"
+                    Content="Autorizar"
+                    Command="{Binding ApproveCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Background="#0EA5E9"
+                    Foreground="#FFFFFF"
+                    Padding="0,12"
+                    CornerRadius="6"
+                    FontWeight="SemiBold">
+                <Button.Styles>
+                    <Style Selector="Button:pointerover /template/ ContentPresenter">
+                        <Setter Property="Background" Value="#0284C7"/>
+                    </Style>
+                </Button.Styles>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

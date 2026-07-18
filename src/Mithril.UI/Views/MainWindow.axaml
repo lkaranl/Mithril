@@ -1,0 +1,178 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Mithril.UI.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="450"
+        Width="600" Height="450"
+        x:Class="Mithril.UI.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Mithril - Gerenciador de Senhas &amp; Servidor MCP"
+        Background="#111115"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid RowDefinitions="Auto, *, Auto">
+        <!-- Barra Superior (Header) -->
+        <Border Grid.Row="0" Background="#1A1A24" Padding="20,16" BorderBrush="#2E2E38" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*, Auto">
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="🛡️ Mithril Vault" FontSize="22" FontWeight="Bold" Foreground="#FFFFFF" />
+                    <TextBlock Text="Cofre de Senhas Multiplataforma Integrado com MCP" FontSize="11" Foreground="#A9A9B3"/>
+                </StackPanel>
+                
+                <!-- Indicador de Status do Cofre -->
+                <Border Grid.Column="1" 
+                        Tag="{Binding IsVaultOpen}"
+                        CornerRadius="12" 
+                        Padding="12,6">
+                    <Border.Styles>
+                        <Style Selector="Border">
+                            <Setter Property="Background" Value="#374151"/>
+                        </Style>
+                        <Style Selector="Border[Tag=True]">
+                            <Setter Property="Background" Value="#16A34A"/>
+                        </Style>
+                    </Border.Styles>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Ellipse Width="8" Height="8" Tag="{Binding IsVaultOpen}">
+                            <Ellipse.Styles>
+                                <Style Selector="Ellipse">
+                                    <Setter Property="Fill" Value="#9CA3AF"/>
+                                </Style>
+                                <Style Selector="Ellipse[Tag=True]">
+                                    <Setter Property="Fill" Value="#4ADE80"/>
+                                </Style>
+                            </Ellipse.Styles>
+                        </Ellipse>
+                        <TextBlock Text="Cofre" FontSize="11" Foreground="#FFFFFF" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Conteúdo Principal -->
+        <Grid Grid.Row="1" Margin="24">
+            <!-- Caso o cofre esteja fechado (Painel de Autenticação) -->
+            <Border IsVisible="{Binding !IsVaultOpen}" 
+                    Background="#1E1E24" 
+                    BorderBrush="#2E2E38" 
+                    BorderThickness="1" 
+                    CornerRadius="8" 
+                    Padding="24"
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center" 
+                    Width="400">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Desbloquear Cofre" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Insira a Senha Mestre para criar ou abrir seu cofre criptografado local." 
+                               FontSize="12" 
+                               Foreground="#8E8E9F" 
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"/>
+                    
+                    <TextBox PasswordChar="*" 
+                             Text="{Binding MasterPassword}" 
+                             PlaceholderText="Senha Mestre (Mínimo de 8 caracteres)" 
+                             Background="#111115"
+                             Foreground="#FFFFFF"
+                             BorderBrush="#3E3E4A"
+                             Padding="10,8"
+                             Margin="0,8,0,0"/>
+
+                    <Button Content="Desbloquear / Inicializar" 
+                            Command="{Binding OpenOrCreateVaultCommand}" 
+                            HorizontalAlignment="Stretch" 
+                            HorizontalContentAlignment="Center"
+                            Background="#0EA5E9" 
+                            Foreground="#FFFFFF" 
+                            Padding="0,12" 
+                            CornerRadius="6"
+                            FontWeight="SemiBold">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#0284C7"/>
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- Caso o cofre esteja aberto (Painel de Credenciais) -->
+            <Grid IsVisible="{Binding IsVaultOpen}" RowDefinitions="Auto, *, Auto" RowSpacing="16">
+                <!-- Cabeçalho da Lista e Ações rápidas -->
+                <Grid Grid.Row="0" ColumnDefinitions="*, Auto">
+                    <TextBlock Grid.Column="0" Text="Credenciais Cadastradas" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                        <Button Content="Gerar Backup Físico" 
+                                Command="{Binding CreateBackupCommand}"
+                                Background="#2E2E38" 
+                                Foreground="#FFFFFF" 
+                                BorderBrush="#3E3E4A"
+                                BorderThickness="1"
+                                Padding="12,8"
+                                CornerRadius="4"
+                                FontSize="12">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="#3E3E4A"/>
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Tabela de Credenciais -->
+                <Border Grid.Row="1" Background="#1E1E24" BorderBrush="#2E2E38" BorderThickness="1" CornerRadius="8" Padding="12">
+                    <ListBox ItemsSource="{Binding Credentials}" Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#2E2E38" BorderThickness="0,0,0,1" Padding="8,10">
+                                    <Grid ColumnDefinitions="*, *, Auto">
+                                        <!-- Logo / Ícone de Domínio fictício -->
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                                            <TextBlock Text="🌐" FontSize="20" VerticalAlignment="Center"/>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Domain}" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                <TextBlock Text="Domínio" FontSize="10" Foreground="#8E8E9F"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        
+                                        <!-- Usuário -->
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Username}" FontSize="13" Foreground="#FFFFFF"/>
+                                            <TextBlock Text="Usuário" FontSize="10" Foreground="#8E8E9F"/>
+                                        </StackPanel>
+
+                                        <!-- Indicador Criptográfico -->
+                                        <Border Grid.Column="2" Background="#2A1B1B" BorderBrush="#EF4444" BorderThickness="1" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="AES-256-GCM" FontSize="9" Foreground="#EF4444" FontWeight="Medium"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+
+                <!-- Informação Adicional do Servidor MCP -->
+                <Border Grid.Row="2" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="🤖" FontSize="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="O Servidor MCP está escutando em segundo plano. Consultas de IA para 'github.com' irão disparar um pedido de consentimento." 
+                                   FontSize="11" 
+                                   Foreground="#94A3B8" 
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- Barra Inferior (Status Bar) -->
+        <Border Grid.Row="2" Background="#161622" Padding="20,10" BorderBrush="#2E2E38" BorderThickness="0,1,0,0">
+            <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#8E8E9F" VerticalAlignment="Center" TextWrapping="NoWrap" />
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Mithril.Domain/Mithril.Domain.csproj" />
+    <Project Path="src/Mithril.Infrastructure/Mithril.Infrastructure.csproj" />
+    <Project Path="src/Mithril.UI/Mithril.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Mithril.Tests/Mithril.Tests.csproj" />
+  </Folder>
+</Solution>
