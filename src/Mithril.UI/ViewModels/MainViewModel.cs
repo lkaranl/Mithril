@@ -440,7 +440,7 @@ public partial class MainViewModel : ViewModelBase
                 SuggestedStartLocation = suggestedFolder,
                 FileTypeFilter = new[]
                 {
-                    new FilePickerFileType("Backups do Mithril") { Patterns = new[] { "*.json", "*_backup*" } }
+                    new FilePickerFileType("Backups do Mithril (*.mithrilbak)") { Patterns = new[] { "*.mithrilbak" } }
                 }
             };
 
